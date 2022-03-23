@@ -30,9 +30,9 @@ class NewWindow(Toplevel):
         self.geometry("+{}+{}".format(positionRight, positionDown))
         print("Width", windowWidth, "Height", windowHeight)
 
-        label = Label(self, text="Apertura Puerta" + " " +  boton.cget('text'),font='arial')
-        label.config(font=("Tahoma", 10))
-        label.grid(row=0,column=0,rowspan=1,sticky=NS)
+        label = Label(self, text=" " +  boton.cget('text'),font='arial')
+        label.config(font=("Tahoma", 20))
+        label.grid(row=0,column=0,rowspan=2,sticky=NS)
         self.btnAbrir=Button(self,text='Abrir',style="Custom.TButton",command=self.API_door) #height=2, width=3
         self.btnAbrir.grid(row=2,column=0, sticky=NS, pady=20) #,
         ##btnAbrir.bind("<Button-1>",lambda x=1: self.API_status)
