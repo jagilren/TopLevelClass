@@ -4,6 +4,7 @@
 # and modules which are available in
 # tkinter and ttk module
 import requests
+import time
 from tkinter import *
 
 from tkinter.ttk import *
@@ -32,17 +33,18 @@ class NewWindow(Toplevel):
         label = Label(self, text="Apertura Puerta" + " " +  boton.cget('text'),font='arial')
         label.config(font=("Tahoma", 10))
         label.grid(row=0,column=0,rowspan=1,sticky=NS)
-        btnAbrir=Button(self,text='Abrir Puerta',style="Custom.TButton",command=self.API_status) #height=2, width=3
-        btnAbrir.grid(row=2,column=0, sticky=NS, pady=20) #,
+        self.btnAbrir=Button(self,text='Abrir',style="Custom.TButton",command=self.API_door) #height=2, width=3
+        self.btnAbrir.grid(row=2,column=0, sticky=NS, pady=20) #,
         ##btnAbrir.bind("<Button-1>",lambda x=1: self.API_status)
         ##btnAbrir.bind('<Return>', self.API_door, add='+')
-        btnBloquear=Button(self,text='Bloquear Puerta',style="Custom.TButton",command=self.API_status) #height=2, width=3
-        btnBloquear.grid(row=6,column=0, sticky=NS, pady=20) #,
+        self.btnLock=Button(self,text='Bloquear ',style="Custom.TButton",command=self.API_status) #height=2, width=3
+        self.btnLock.grid(row=6,column=0, sticky=NS, pady=20) #,
+        btnUnLock=Button(self,text='Des-Bloquear',style="Custom.TButton",command=self.API_status) #height=2, width=3
+        btnUnLock.grid(row=6,column=1, sticky=NS, pady=20) #,
 
         self.focus()
         self.grab_set()
-        # self.API_status()
-        # self.time.sleep(2)
+
 
     my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
                   'Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
@@ -52,6 +54,14 @@ class NewWindow(Toplevel):
                        '&interval=1'+ '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
         print(f'url_abrir_cerrar_puerta {endpoint_Door}')
         response = requests.post(endpoint_Door, headers=self.my_headers)
+        self.btnAbrir['state'] = DISABLED
+        self.btnAbrir.config(cursor="heart")
+        self.btnLock.focus()
+        self.btnLock.grab_set()
+        time.sleep(5)
+        self.btnAbrir['state'] = NORMAL
+        self.btnAbrir.config(cursor="arrow")
+        self.destroy()
         print(f'HEADERS:   {self.my_headers}')
         print(f'json response abrir:   {response.json()}')
         # if self.DoorStatus == '1':
@@ -125,7 +135,7 @@ for element in seznamTextu:
         btn = Button(master,
                  text=element,padding=20,state=state,style="Custom.TButton")
         btn.bind("<Button>",
-             lambda e,boton=btn,Identificador=Dict_seznamTextu[btn.cget('text')]: NewWindow(master,boton,Identificador))
+             lambda e,boton=btn,Identificador=Dict_seznamTextu[btn.cget('text')]: NewWindow(master, boton, Identificador))
     else:
         btn = Button(master,
                  text=element,padding=20,state=state,style="Custom.TButton")
@@ -137,4 +147,4 @@ for element in seznamTextu:
         bunka = 0
         radek += 1
 
-mainloop()
+master.mainloop()
