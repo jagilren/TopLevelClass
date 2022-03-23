@@ -35,7 +35,7 @@ class NewWindow(Toplevel):
         label.grid(row=0,column=0,rowspan=2,sticky=NS)
         self.btnAbrir=Button(self,text='Abrir',style="Custom.TButton",command=self.API_door) #height=2, width=3
         self.btnAbrir.grid(row=2,column=0, sticky=NS, pady=20) #,
-        ##btnAbrir.bind("<Button-1>",lambda x=1: self.API_status)
+        ###btnAbrir.bind("<Button-1>",lambda x=1: self.API_status)
         ##btnAbrir.bind('<Return>', self.API_door, add='+')
         self.btnLock=Button(self,text='Bloquear ',style="Custom.TButton",command=self.API_status) #height=2, width=3
         self.btnLock.grid(row=6,column=0, sticky=NS, pady=20) #,
