@@ -9,6 +9,8 @@ import time
 from tkinter import *
 from tkinter.ttk import *
 from tkinter.constants import DISABLED, NORMAL
+import time
+from threading import *
 
 class NewWindow(Toplevel):
     import time
@@ -70,34 +72,32 @@ class NewWindow(Toplevel):
                        '&interval=1'+ '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
         print(f'url_abrir_cerrar_puerta {endpoint_Door}')
         response = requests.post(endpoint_Door, headers=self.my_headers)
+
+    def btn_Abrir(self):
+        self.API_door()
         self.btnAbrir['state'] = DISABLED
         self.btnAbrir.config(cursor="watch")
         self.btnLock.focus()
         self.btnLock.grab_set()
-        time.sleep(2)
-        self.btnAbrir['state'] = NORMAL
-        self.btnAbrir.config(cursor="arrow")
+        time.sleep(5)
         self.destroy()
         print(f'HEADERS:   {self.my_headers}')
         print(f'json response abrir:   {response.json()}')
-        # if self.DoorStatus == '1':
-        #     url_puerta = 'http://192.168.40.82:8098/api/door/remoteOpenById?' + 'doorId=' + self.IDDoor + \
-        #                '&interval=1'+ '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
-        #     response = requests.post(url_puerta, headers=my_headers)
-        #     print(f'json response abrir:   {response.json()}')
-        # elif self.DoorStatus=='2':
-        #     url_puerta = 'http://192.168.40.82:8098/api/door/remoteCloseById?' + 'doorId=' + self.IDDoor + \
-        #                '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
-        #     response = requests.post(url_puerta, headers=my_headers)
-        #     print(f'json response cerrar:   {response.json()}')
-        # else:
-        #     pass
 
     def API_print(self, response):
         print(f'{response} Tipo de Respuesta {type(response)}')
         print(f'Status Code: {response.status_code}')
         print(f"Headers Content Type: {response.headers['content-type']}")
         print(f'Yeison Final::{response.json()}')
+
+
+def work():
+    print("sleep time start")
+    for i in range(10):
+        print(i)
+        time.sleep(1)
+    print("sleep time stop")
+
 
 
 def submit(labelQueryResult):
@@ -112,8 +112,6 @@ def submit(labelQueryResult):
     elif (API_status(IDDoor)=='1'):
         labelQueryResult.config(text=prefixHab  + " Puerta está Abierta", background="red")
 
-
-
 def API_status(IDDoor):
     print(f'Api Status Ejecutado, {IDDoor}')
     endpoint_Door = 'http://192.168.40.82:8098/api/door/doorStateById?' + 'doorId=' + IDDoor + \
@@ -123,8 +121,6 @@ def API_status(IDDoor):
     DoorStatus=response.json()['data'][0]['sensor']
     print(f'Estado Sensor Puerta= {DoorStatus}')
     return DoorStatus
-
-
 
 def leer_csv(filename):
     fields = []
@@ -138,6 +134,7 @@ def leer_csv(filename):
     return rows
 Dict_Door_ID = leer_csv('doors.txt')
 Dict_AuxOut_ID=leer_csv('AuxOut.txt')
+global my_headers
 my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json','Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
 master = Tk()
 master.geometry("1440x640")
@@ -190,5 +187,19 @@ for index,element in enumerate(list_textButton):
     Dict_Door_ID[element]= str(doorIDs[index])
 for index,element in enumerate(list_textButton):
     Dict_AuxOut_ID[element]= str(AuxOutIDs[index])
+
+        # if self.DoorStatus == '1':
+        #     url_puerta = 'http://192.168.40.82:8098/api/door/remoteOpenById?' + 'doorId=' + self.IDDoor + \
+        #                '&interval=1'+ '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
+        #     response = requests.post(url_puerta, headers=my_headers)
+        #     print(f'json response abrir:   {response.json()}')
+        # elif self.DoorStatus=='2':
+        #     url_puerta = 'http://192.168.40.82:8098/api/door/remoteCloseById?' + 'doorId=' + self.IDDoor + \
+        #                '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
+        #     response = requests.post(url_puerta, headers=my_headers)
+        #     print(f'json response cerrar:   {response.json()}')
+        # else:
+        #     pass
+
 
 """
