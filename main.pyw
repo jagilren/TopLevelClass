@@ -93,25 +93,38 @@ class NewWindow(Toplevel):
         # else:
         #     pass
 
-    def API_status(self):
-        endpoint_Door = 'http://192.168.40.82:8098/api/door/doorStateById?' + 'doorId=' + self.IDDoor + \
-                     '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
-        response = requests.get(endpoint_Door, headers=self.my_headers)
-        print(f'json response:   {response.json()}')
-        self.DoorStatus=response.json()['data'][0]['sensor']
-        print(f'Estado Sensor Puerta= {self.DoorStatus}')
-        # if self.DoorStatus == '1':
-        #      btnAbrir.config(text='Abrir Puerta',command=self.API_door)
-        # elif self.DoorStatus == '2':
-        #     btnAbrir.config(text='Cerrar Puerta',command=self.API_door)
-        # return btnAbrir
-
-
     def API_print(self, response):
         print(f'{response} Tipo de Respuesta {type(response)}')
         print(f'Status Code: {response.status_code}')
         print(f"Headers Content Type: {response.headers['content-type']}")
         print(f'Yeison Final::{response.json()}')
+
+
+def submit(labelQueryResult):
+    prefixHab = 'HAB' + hab_var.get()
+    IDAuxOut=Dict_AuxOut_ID[prefixHab]
+    IDDoor= Dict_Door_ID[prefixHab]
+    #print("The Door  is : " + IDDoor)
+    #print("The AuxOut is : " + IDAuxOut)
+    print(labelQueryResult.cget('text'))
+    if (API_status(IDDoor)=='0'):
+        labelQueryResult.config(text=prefixHab + " Puerta está Cerrada", background="green")
+    elif (API_status(IDDoor)=='1'):
+        labelQueryResult.config(text=prefixHab  + " Puerta está Abierta", background="red")
+
+
+
+def API_status(IDDoor):
+    print(f'Api Status Ejecutado, {IDDoor}')
+    endpoint_Door = 'http://192.168.40.82:8098/api/door/doorStateById?' + 'doorId=' + IDDoor + \
+     '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
+    response = requests.get(endpoint_Door, headers=my_headers)
+    print(f'json response:   {response.json()}')
+    DoorStatus=response.json()['data'][0]['sensor']
+    print(f'Estado Sensor Puerta= {DoorStatus}')
+    return DoorStatus
+
+
 
 def leer_csv(filename):
     fields = []
@@ -125,7 +138,7 @@ def leer_csv(filename):
     return rows
 Dict_Door_ID = leer_csv('doors.txt')
 Dict_AuxOut_ID=leer_csv('AuxOut.txt')
-
+my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json','Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
 master = Tk()
 master.geometry("1440x640")
 
@@ -139,6 +152,8 @@ hab_entry = Entry(master,textvariable=hab_var, font=('calibre',11,'bold'),width=
 hab_entry.grid(row=68,column=0,sticky = W)
 btnQuery = Button(master, text="OK", padding=1,command=NONE,width=5)
 btnQuery.grid(row=70,column=0,sticky = W,pady=2)
+btnQuery.bind("<Button>",lambda e, IDDoor=hab_var.get(),IDAuxOut=hab_var.get(): submit(labelQueryResult))
+
 labelQueryResult = Label(master, text="Resultado:",font=('calibre',11,'bold'),foreground='white',background='black')
 labelQueryResult.grid(row=72,column=0,pady=2,sticky=W)
 
