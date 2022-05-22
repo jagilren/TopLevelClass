@@ -5,24 +5,26 @@
 # tkinter and ttk module
 import requests
 import csv
-import time
 from tkinter import *
 from tkinter.ttk import *
+import tkinter.messagebox
 from tkinter.constants import DISABLED, NORMAL
 import time
-from threading import *
+import threading
 
 class NewWindow(Toplevel):
     import time
-    def __init__(self, master=None,boton=None,IDDoor=None, IDAuxOut=None):
+    def __init__(self, master=None,boton=None,IDDoor=None, IDAuxOut=None,my_headers=None):
         super().__init__(master=master)
-        self.title(IDAuxOut + "_"*1 + boton.cget('text'))
+        self.title( boton.cget('text'))
+        self.my_headers=my_headers
         self.geometry("400x200")
         self.IDDoor = IDDoor
         self.IDAuxOut = IDAuxOut
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         self.DoorStatus = '1'
+        self.t1 = threading.Thread(target=self.TimeOutforAuxClose, name='t1')
         # Gets the requested values of the height and widht.
         windowWidth = self.winfo_reqwidth() *2
         windowHeight = self.winfo_reqheight() *2
@@ -31,17 +33,15 @@ class NewWindow(Toplevel):
         positionDown = int(self.winfo_screenheight() / 2 - windowHeight / 2)
         self.geometry("+{}+{}".format(positionRight, positionDown))
         print("Width", windowWidth, "Height", windowHeight)
-        self.btnAbrir=Button(self,text='Abrir',style="Custom.TButton",command=self.API_door) #height=2, width=3
+        self.btnAbrir=Button(self,text='Abrir',command=self.AssignProcess) #height=2, width=3
         self.btnAbrir.grid(row=2,column=0, sticky=NS, pady=20) #,
-        ###btnAbrir.bind("<Button-1>",lambda x=1: self.API_status)
-        ###btnAbrir.bind('<Return>', self.API_door, add='+')
-        self.btnCerrar=Button(self,text='Cerrar',style="Custom.TButton",command=self.API_door) #height=2, width=3
+        self.btnCerrar=Button(self,text='Cerrar',command=self.API_door) #height=2, width=3
         self.btnCerrar.grid(row=2,column=1, sticky=NS, pady=20) #,
 
-        self.btnLock = Button(self,text='Bloquear ', style="Custom.TButton",command=self.API_AuxButtonClose) #height=2, width=3
+        self.btnLock = Button(self,text='Bloquear ',command=self.API_AuxButtonClose) #height=2, width=3
         self.btnLock.grid(row=6,column=0, sticky=NS, pady=20) #,
 
-        self.btnUnLock = Button(self,text='Des-Bloquear', style="Custom.TButton", command=self.API_AuxButtonNormalOpen) #height=2, width=3
+        self.btnUnLock = Button(self,text='Des-Bloquear', command=self.API_AuxButtonNormalOpen) #height=2, width=3
         self.btnUnLock.grid(row=6,column=1, sticky=NS, pady=20) #,
 
         labelStatusDoor = Label(self, textvariable="Puerta Abierta", relief=RAISED)
@@ -52,8 +52,28 @@ class NewWindow(Toplevel):
         self.grab_set()
 
 
-    my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
-                  'Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
+    def AssignProcess(self):
+        self.btnAbrir.configure(text="Espere...")
+        time.sleep(2)
+        self.API_AuxButtonNormalOpen()
+        #tkinter.messagebox.showinfo("Acción Activada", "mensaje Informativo")
+        self.t1.start()
+        self.btnAbrir.configure(text="Abrir")
+        self.destroy()
+
+    def API_door(self):
+        endpoint_Door = 'http://192.168.40.82:8098/api/door/remoteOpenById?' + 'doorId=' + self.IDDoor + \
+                       '&interval=1'+ '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
+        #print(f'url_abrir_cerrar_puerta {endpoint_Door}')
+        response = requests.post(endpoint_Door, headers=self.my_headers)
+        print(f'Respuesta JSON API_DoorOpen: {response.json()}')
+
+    def TimeOutforAuxClose(self):
+        for element in range(10):
+            time.sleep(1)
+            print(f'Threading Time = {element} Bloqueando Botón')
+        self.API_AuxButtonClose()
+
 
     def API_AuxButtonNormalOpen(self):
         endpoint_Aux = 'http://192.168.40.82:8098/api/auxOut/remoteNormalOpenByAuxOutById?id=' + self.IDAuxOut + \
@@ -66,12 +86,6 @@ class NewWindow(Toplevel):
                      '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
         response = requests.post(endpoint_Aux, headers=self.my_headers)
         print(f'json response CloseAuxOut:   {response.json()}')
-
-    def API_door(self):
-        endpoint_Door = 'http://192.168.40.82:8098/api/door/remoteOpenById?' + 'doorId=' + self.IDDoor + \
-                       '&interval=1'+ '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
-        print(f'url_abrir_cerrar_puerta {endpoint_Door}')
-        response = requests.post(endpoint_Door, headers=self.my_headers)
 
     def btn_Abrir(self):
         self.API_door()
@@ -90,15 +104,12 @@ class NewWindow(Toplevel):
         print(f"Headers Content Type: {response.headers['content-type']}")
         print(f'Yeison Final::{response.json()}')
 
-
 def work():
     print("sleep time start")
     for i in range(10):
         print(i)
         time.sleep(1)
     print("sleep time stop")
-
-
 
 def submit(labelQueryResult):
     prefixHab = 'HAB' + hab_var.get()
@@ -137,10 +148,14 @@ Dict_AuxOut_ID=leer_csv('AuxOut.txt')
 global my_headers
 my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json','Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
 master = Tk()
-master.geometry("1440x640")
+master.geometry("1140x640")
+f = Frame(master)
 
-style = Style(master)
-style.configure('Custom.TButton', font=('Sanserif', 11),bordercolor='#00FF00',background='#0000FF',borderwidth=4)
+style = Style()
+style.configure('TButton', font =('Tahoma', 10 ),borderwidth = '4')
+style.map('TButton', foreground = [('active', '!disabled', ('green'))],background = [('active', 'black')])
+
+style.configure('TFrame',bordercolor='pink',background='#68839B',borderwidth=1)
 
 labelTitleQuery = Label(master, text="Consulta Estado",font=('calibre',11,'bold'), padding=1,foreground="white",background='black')
 labelTitleQuery.grid(row=62,column=0,sticky = W,pady=2)
@@ -150,33 +165,37 @@ hab_entry.grid(row=68,column=0,sticky = W)
 btnQuery = Button(master, text="OK", padding=1,command=NONE,width=5)
 btnQuery.grid(row=70,column=0,sticky = W,pady=2)
 btnQuery.bind("<Button>",lambda e, IDDoor=hab_var.get(),IDAuxOut=hab_var.get(): submit(labelQueryResult))
-
+f = Frame(master,style="Custom.TFrame")
+f.grid(row=1,column=0)
 labelQueryResult = Label(master, text="Resultado:",font=('calibre',11,'bold'),foreground='white',background='black')
-labelQueryResult.grid(row=72,column=0,pady=2,sticky=W)
+labelQueryResult.grid(row=72,column=0,pady=2,sticky=W,columnspan=20)
 
-radek_line = 10 #Set  ROW  of  matríz of Buttons
+radek_line = 2 #Set  ROW  of  matríz of Buttons
 bunka_column = 0
 for element in Dict_Door_ID.keys():
     state = DISABLED
     if element=='HAB50':
         state=NORMAL
-        btn = Button(master,
-                 text=element,padding=10,state=state,style="Custom.TButton")
+        btn = Button(f,text=element,padding=10,state=state)
         btn.bind("<Button>",
-                 lambda e, boton = btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')]: NewWindow(master, boton, IDDoor, IDAuxOut))
+                 lambda e, boton = btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')]: NewWindow(master, boton, IDDoor, IDAuxOut,my_headers))
     else:
-        btn = Button(master,
-                 text=element,padding=10,state=state,style="Custom.TButton")
+        btn = Button(f,text=element,padding=10,state=state)
 
-    btn.grid(row=radek_line, column=bunka_column,padx=2,pady=2)
+    btn.grid(row=radek_line, column=bunka_column,padx=2,pady=2,sticky=W)
 
     bunka_column += 1
     if bunka_column == 10:  # changed this variable to make it easier to test code.
         bunka_column = 0
         radek_line += 1
-
-
+master.title('Apertura Puertas Motel Classic')
+master.config(bg='#68839B')
+p1 = PhotoImage(file ='RAM4GB.png')
+p1=master.iconphoto(True, p1)
+"""sb = Scrollbar(f,orient=VERTICAL)
+sb.grid(row=0, column=15, sticky=NS)"""
 master.mainloop()
+
 
 """doorIDs = [str(x) for x in range(1,79,1)]
 AuxOutIDs=[str(x) for x in range(1, 79, 1)]
