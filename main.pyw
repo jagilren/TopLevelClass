@@ -82,13 +82,14 @@ class NewWindow(Toplevel):
 
     def TimeOutforAuxClose(self):
         print(f'AuxNormalOpen Executed')
-        self.API_AuxButtonNormalOpen()
         #Apertura de Puerta
         self.API_door()
         print(f'Abriendo Puerta')
+
+        self.API_AuxButtonNormalOpen()
         #TimeOut for Close Aux Button Recomended 600 secs
         labelQueryResult.config(text="Esperando...", background='black')
-        for element in range(120):
+        for element in range(45):
             time.sleep(1)
             print(f'Threading Time = {element} AuxClose Exeduted')
         self.API_AuxButtonClose()
@@ -217,7 +218,7 @@ radek_line = 2 #Set  ROW  of  matríz of Buttons
 bunka_column = 0
 for element in Dict_Door_ID.keys():
     state = DISABLED
-    if element=='HAB50':
+    if element=='HAB50' or element=='HAB49':
         state=NORMAL
         btn = Button(f,text=element,padding=10,state=state)
         btn.bind("<Button>",
