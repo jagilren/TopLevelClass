@@ -59,7 +59,7 @@ class NewWindow(Toplevel):
 
     def AssignProcess(self):
         self.btnAbrir.configure(text="Espere...")
-        time.sleep(3)
+        #time.sleep(3)
         #MessageBox()
         self.t1.start()
         self.btnAbrir.configure(text="Abrir")
@@ -84,11 +84,11 @@ class NewWindow(Toplevel):
         print(f'AuxNormalOpen Executed')
         self.API_AuxButtonNormalOpen()
         #Apertura de Puerta
-        #self.API_door()
+        self.API_door()
         print(f'Abriendo Puerta')
         #TimeOut for Close Aux Button Recomended 600 secs
         labelQueryResult.config(text="Esperando...", background='black')
-        for element in range(10):
+        for element in range(120):
             time.sleep(1)
             print(f'Threading Time = {element} AuxClose Exeduted')
         self.API_AuxButtonClose()
@@ -159,9 +159,9 @@ def submit(labelQueryResult):
     #print("The Door  is : " + IDDoor)
     #print("The AuxOut is : " + IDAuxOut)
     print(labelQueryResult.cget('text'))
-    if (API_Door_Status(IDDoor)== '2'):
+    if (API_Door_Status(IDDoor)== '1'):
         labelQueryResult.config(text=prefixHab + " Puerta está Cerrada", background="green")
-    elif (API_Door_Status(IDDoor) == '1'):
+    elif (API_Door_Status(IDDoor) == '2'):
         labelQueryResult.config(text=prefixHab  + " Puerta está Abierta", background="red")
     thread1.start()
 
