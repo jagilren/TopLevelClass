@@ -10,7 +10,7 @@ from tkinter.ttk import *
 import tkinter.messagebox
 from tkinter.constants import DISABLED, NORMAL
 import time
-import threading
+from  threading import Thread
 
 class MessageBox(Toplevel):
     def __init__(self ):
@@ -29,7 +29,7 @@ class NewWindow(Toplevel):
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         self.DoorStatus = '1'
-        self.t1 = threading.Thread(target=self.TimeOutforAuxClose, name='t1')
+        self.t1 = Thread(target=self.TimeOutforAuxClose, name='t1')
         # Gets the requested values of the height and widht.
         windowWidth = self.winfo_reqwidth() *2
         windowHeight = self.winfo_reqheight() *2
@@ -131,13 +131,25 @@ def work():
     print("sleep time stop")
 
 def LabelWaiting():
-    for tiempo in range(10):
+    for tiempo in range(5):
         time.sleep(1)
         print ("Waiting for Change Text Label")
     labelQueryResult.config(text="Esperando...", background='black')
 
 
-t2 = threading.Thread(target=LabelWaiting, name='t2')
+class MTThread(Thread):
+    def __init__(self, name = None, target = None):
+        self.mt_name = name
+        self.mt_target = target
+        Thread.__init__(self, name = name, target = target)
+    def start(self):
+        super().start()
+        Thread.__init__(self, name = self.mt_name, target = self.mt_target)
+    def run(self):
+        super().run()
+        Thread.__init__(self, name = self.mt_name, target = self.mt_target)
+
+thread1 = MTThread(name='Labeling',target=LabelWaiting)
 
 
 def submit(labelQueryResult):
@@ -151,8 +163,8 @@ def submit(labelQueryResult):
         labelQueryResult.config(text=prefixHab + " Puerta está Cerrada", background="green")
     elif (API_Door_Status(IDDoor) == '1'):
         labelQueryResult.config(text=prefixHab  + " Puerta está Abierta", background="red")
-    t2.start()
-    t2.join(1)
+    thread1.start()
+
 
 def API_Door_Status(IDDoor):
     print(f'Api Status Ejecutado, {IDDoor}')
@@ -198,7 +210,7 @@ btnQuery.grid(row=70,column=0,sticky = W,pady=2)
 btnQuery.bind("<Button>",lambda e, IDDoor=hab_var.get(),IDAuxOut=hab_var.get(): submit(labelQueryResult))
 f = Frame(master,style="Custom.TFrame")
 f.grid(row=1,column=0)
-labelQueryResult = Label(master, text="Resultado:",font=('calibre',11,'bold'),foreground='white',background='black')
+labelQueryResult = Label(master, text="Esperando...:",font=('calibre',11,'bold'),foreground='white',background='black')
 labelQueryResult.grid(row=72,column=0,pady=2,sticky=W,columnspan=20)
 
 radek_line = 2 #Set  ROW  of  matríz of Buttons
