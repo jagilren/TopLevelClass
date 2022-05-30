@@ -11,6 +11,8 @@ import tkinter.messagebox
 from tkinter.constants import DISABLED, NORMAL
 import time
 from  threading import Thread
+import os
+
 
 class MessageBox(Toplevel):
     def __init__(self ):
@@ -24,12 +26,15 @@ class NewWindow(Toplevel):
         self.title( boton.cget('text'))
         self.my_headers=my_headers
         self.geometry("400x200")
+        self.boton=boton
         self.IDDoor = IDDoor
         self.IDAuxOut = IDAuxOut
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         self.DoorStatus = '1'
-        self.t1 = Thread(target=self.TimeOutforAuxClose, name='t1')
+        self.threadAssign = Thread(target=self.DoorOpen_ButtonOpen_ButtonClose, name='threadAssign')
+        self.threadUnBlock = Thread(target=self.ButtonOpen_ButtonClose, name='threadUnBlock')
+
         # Gets the requested values of the height and widht.
         windowWidth = self.winfo_reqwidth() *2
         windowHeight = self.winfo_reqheight() *2
@@ -43,10 +48,10 @@ class NewWindow(Toplevel):
         self.btnCerrar=Button(self,text='Cerrar',command=self.API_Close_door) #height=2, width=3
         self.btnCerrar.grid(row=2,column=1, sticky=NS, pady=20) #,
 
-        self.btnLock = Button(self,text='Bloquear ',command=self.API_AuxButtonClose) #height=2, width=3
+        self.btnLock = Button(self,text='Bloquear ',command=self.ButtonClose) #height=2, width=3
         self.btnLock.grid(row=6,column=0, sticky=NS, pady=20) #,
 
-        self.btnUnLock = Button(self,text='Des-Bloquear', command=self.API_AuxButtonNormalOpen) #height=2, width=3
+        self.btnUnLock = Button(self,text='Des-Bloquear', command=self.UnBlockProcess) #height=2, width=3
         self.btnUnLock.grid(row=6,column=1, sticky=NS, pady=20) #,
 
         labelStatusDoor = Label(self, textvariable="Puerta Abierta", relief=RAISED)
@@ -58,12 +63,15 @@ class NewWindow(Toplevel):
 
 
     def AssignProcess(self):
-        self.btnAbrir.configure(text="Espere...")
-        #time.sleep(3)
-        #MessageBox()
-        self.t1.start()
-        self.btnAbrir.configure(text="Abrir")
+        self.threadAssign.start()
         self.destroy()
+
+    def UnBlockProcess(self):
+        self.threadUnBlock.start()
+        threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
+        threadLabelWaiting.start()
+        self.destroy()
+
 
     def API_door(self):
         endpoint_Door = 'http://192.168.40.82:8098/api/door/remoteOpenById?' + 'doorId=' + self.IDDoor + \
@@ -80,19 +88,36 @@ class NewWindow(Toplevel):
         print(f'Respuesta JSON API_Close_Door: {response.json()}')
 
 
-    def TimeOutforAuxClose(self):
+    def DoorOpen_ButtonOpen_ButtonClose(self):
         print(f'AuxNormalOpen Executed')
         #Apertura de Puerta
         self.API_door()
         print(f'Abriendo Puerta')
-
         self.API_AuxButtonNormalOpen()
         #TimeOut for Close Aux Button Recomended 600 secs
         labelQueryResult.config(text="Esperando...", background='black')
-        for element in range(45):
+        for element in range(25):
             time.sleep(1)
             print(f'Threading Time = {element} AuxClose Exeduted')
         self.API_AuxButtonClose()
+
+    def ButtonOpen_ButtonClose(self):
+        ResponseButtonOpen=self.API_AuxButtonClose()
+        if ResponseButtonOpen=='success':
+            labelQueryResult.config(text=self.boton.cget('text') +" Desbloqueda", background='red')
+        for element in range(15):
+            time.sleep(1)
+            print(f'Threading Time = {element} AuxClose Executed')
+        threadButtonClose = MTThread(name='ClosingButton', target=self.API_AuxButtonClose)
+        threadButtonClose.start()
+
+    def ButtonClose(self):
+        ResponseButtonClose=self.API_AuxButtonClose()
+        if ResponseButtonClose=='success':
+            labelQueryResult.config(text=self.boton.cget('text') +" Bloqueada", background='green')
+        threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
+        threadLabelWaiting.start()
+        self.destroy()
 
 
     def API_AuxButtonNormalOpen(self):
@@ -100,12 +125,15 @@ class NewWindow(Toplevel):
                      '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
         response = requests.post(endpoint_Aux, headers=self.my_headers)
         print(f'json response NormalOpenAuxOut:   {response.json()}')
+        return response.json()['message']
+        time.sleep(10)
 
     def API_AuxButtonClose(self):
         endpoint_Aux = 'http://192.168.40.82:8098/api/auxOut/remoteCloseByAuxOutById?id=' + self.IDAuxOut + \
                      '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
         response = requests.post(endpoint_Aux, headers=self.my_headers)
         print(f'json response CloseAuxOut:   {response.json()}')
+        return response.json()['message']
 
     def btn_Abrir(self):
         self.API_door()
@@ -124,19 +152,11 @@ class NewWindow(Toplevel):
         print(f"Headers Content Type: {response.headers['content-type']}")
         print(f'Yeison Final::{response.json()}')
 
-def work():
-    print("sleep time start")
-    for i in range(10):
-        print(i)
-        time.sleep(1)
-    print("sleep time stop")
-
 def LabelWaiting():
     for tiempo in range(5):
         time.sleep(1)
         print ("Waiting for Change Text Label")
     labelQueryResult.config(text="Esperando...", background='black')
-
 
 class MTThread(Thread):
     def __init__(self, name = None, target = None):
@@ -150,7 +170,7 @@ class MTThread(Thread):
         super().run()
         Thread.__init__(self, name = self.mt_name, target = self.mt_target)
 
-thread1 = MTThread(name='Labeling',target=LabelWaiting)
+threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
 
 
 def submit(labelQueryResult):
@@ -164,8 +184,9 @@ def submit(labelQueryResult):
         labelQueryResult.config(text=prefixHab + " Puerta está Cerrada", background="green")
     elif (API_Door_Status(IDDoor) == '2'):
         labelQueryResult.config(text=prefixHab  + " Puerta está Abierta", background="red")
-    thread1.start()
-
+    elif (API_Door_Status(IDDoor) not in ['1','2']):
+        labelQueryResult.config(text=prefixHab  + " Estado del Sensor Desconocido", background="purple")
+    threadLabelWaiting.start()
 
 def API_Door_Status(IDDoor):
     print(f'Api Status Ejecutado, {IDDoor}')
@@ -176,6 +197,23 @@ def API_Door_Status(IDDoor):
     DoorStatus=response.json()['data'][0]['sensor']
     print(f'Estado Sensor Puerta= {DoorStatus}')
     return DoorStatus
+
+
+# Specify path
+
+
+def VerificaTXT(filetxt):
+    isExist = os.path.exists(filetxt)
+    return isExist
+
+def CheckAllFilesExist(queryexist=True):
+    list_configFiles=['./AuxOut.txt','./doors.txt','./RAM4GB.png']
+    for ConfigFiles in list_configFiles:
+        queryexist=queryexist*VerificaTXT(ConfigFiles)
+    if (queryexist):
+        pass
+    else:
+        master.destroy()
 
 def leer_csv(filename):
     fields = []
@@ -190,6 +228,7 @@ def leer_csv(filename):
 Dict_Door_ID = leer_csv('doors.txt')
 Dict_AuxOut_ID=leer_csv('AuxOut.txt')
 global my_headers
+
 my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json','Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
 master = Tk()
 master.geometry("1140x640")
@@ -209,6 +248,7 @@ hab_entry.grid(row=68,column=0,sticky = W)
 btnQuery = Button(master, text="OK", padding=1,command=NONE,width=5)
 btnQuery.grid(row=70,column=0,sticky = W,pady=2)
 btnQuery.bind("<Button>",lambda e, IDDoor=hab_var.get(),IDAuxOut=hab_var.get(): submit(labelQueryResult))
+btnQuery.bind('<Return>',lambda e, IDDoor=hab_var.get(),IDAuxOut=hab_var.get(): submit(labelQueryResult))
 f = Frame(master,style="Custom.TFrame")
 f.grid(row=1,column=0)
 labelQueryResult = Label(master, text="Esperando...:",font=('calibre',11,'bold'),foreground='white',background='black')
@@ -236,8 +276,8 @@ master.title('Apertura Puertas Motel Classic')
 master.config(bg='#68839B')
 p1 = PhotoImage(file ='RAM4GB.png')
 p1=master.iconphoto(True, p1)
-"""sb = Scrollbar(f,orient=VERTICAL)
-sb.grid(row=0, column=15, sticky=NS)"""
+
+CheckAllFilesExist()
 master.mainloop()
 
 
