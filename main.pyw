@@ -34,6 +34,7 @@ class NewWindow(Toplevel):
         self.DoorStatus = '1'
         self.threadAssign = Thread(target=self.DoorOpen_ButtonOpen_ButtonClose, name='threadAssign')
         self.threadUnBlock = Thread(target=self.ButtonOpen_ButtonClose, name='threadUnBlock')
+        self.threadBlock = Thread(target=self.ButtonClose, name='threadBlock')
 
         # Gets the requested values of the height and widht.
         windowWidth = self.winfo_reqwidth() *2
@@ -45,7 +46,7 @@ class NewWindow(Toplevel):
         print("Width", windowWidth, "Height", windowHeight)
         self.btnAbrir=Button(self,text='Abrir',command=self.AssignProcess) #height=2, width=3
         self.btnAbrir.grid(row=2,column=0, sticky=NS, pady=20) #,
-        self.btnCerrar=Button(self,text='Cerrar',command=self.API_Close_door) #height=2, width=3
+        self.btnCerrar=Button(self,text='Cerrar',command=self.API_Close_door,state='DISABLED') #height=2, width=3
         self.btnCerrar.grid(row=2,column=1, sticky=NS, pady=20) #,
 
         self.btnLock = Button(self,text='Bloquear ',command=self.ButtonClose) #height=2, width=3
@@ -67,6 +68,12 @@ class NewWindow(Toplevel):
         self.destroy()
 
     def UnBlockProcess(self):
+        self.threadUnBlock.start()
+        threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
+        threadLabelWaiting.start()
+        self.destroy()
+
+    def BlockProcess(self):
         self.threadUnBlock.start()
         threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
         threadLabelWaiting.start()
@@ -152,6 +159,22 @@ class NewWindow(Toplevel):
         print(f"Headers Content Type: {response.headers['content-type']}")
         print(f'Yeison Final::{response.json()}')
 
+def validate_entry(text,new_text):
+    try:
+        if not(new_text):
+            return TRUE
+        if len(new_text)>2:
+            return FALSE
+        if int(new_text) > 78:
+            return FALSE
+        return text.isdecimal()
+    except:
+        hab_entry.config(text="")
+        return FALSE
+
+    finally:
+        print(f'Entraste al finally')
+
 def LabelWaiting():
     for tiempo in range(5):
         time.sleep(1)
@@ -173,12 +196,12 @@ class MTThread(Thread):
 threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
 
 
-def submit(labelQueryResult):
-    prefixHab = 'HAB' + hab_var.get()
+def submitQuery(labelQueryResult):
+    if not(hab_var.get()):
+        return
+    prefixHab='HAB0'+ hab_var.get() if len(hab_var.get()) == 1 else 'HAB' + hab_var.get()
     IDAuxOut=Dict_AuxOut_ID[prefixHab]
     IDDoor= Dict_Door_ID[prefixHab]
-    #print("The Door  is : " + IDDoor)
-    #print("The AuxOut is : " + IDAuxOut)
     print(labelQueryResult.cget('text'))
     if (API_Door_Status(IDDoor)== '1'):
         labelQueryResult.config(text=prefixHab + " Puerta está Cerrada", background="green")
@@ -192,11 +215,14 @@ def API_Door_Status(IDDoor):
     print(f'Api Status Ejecutado, {IDDoor}')
     endpoint_Door = 'http://192.168.40.82:8098/api/door/doorStateById?' + 'doorId=' + IDDoor + \
      '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
-    response = requests.get(endpoint_Door, headers=my_headers)
-    print(f'json response:   {response.json()}')
-    DoorStatus=response.json()['data'][0]['sensor']
-    print(f'Estado Sensor Puerta= {DoorStatus}')
-    return DoorStatus
+    try:
+        response = requests.get(endpoint_Door, headers=my_headers)
+        print(f'json response:   {response.json()}')
+        DoorStatus=response.json()['data'][0]['sensor']
+        print(f'Estado Sensor Puerta= {DoorStatus}')
+        return DoorStatus
+    except:
+        retur="Puerta Inexistente"
 
 
 # Specify path
@@ -242,13 +268,14 @@ style.configure('TFrame',bordercolor='pink',background='#68839B',borderwidth=1)
 
 labelTitleQuery = Label(master, text="Consulta Estado",font=('calibre',11,'bold'), padding=1,foreground="white",background='black')
 labelTitleQuery.grid(row=62,column=0,sticky = W,pady=2)
+
 hab_var = StringVar()
-hab_entry = Entry(master,textvariable=hab_var, font=('calibre',11,'bold'),width=5)
+hab_entry = Entry(master,textvariable=hab_var, font=('calibre',11,'bold'),width=5, validate="key",validatecommand=(master.register(validate_entry), "%S", "%P"))
 hab_entry.grid(row=68,column=0,sticky = W)
-btnQuery = Button(master, text="OK", padding=1,command=NONE,width=5)
+btnQuery = Button(master, text="CONSULTAR", padding=1,command=NONE,width=15)
 btnQuery.grid(row=70,column=0,sticky = W,pady=2)
-btnQuery.bind("<Button>",lambda e, IDDoor=hab_var.get(),IDAuxOut=hab_var.get(): submit(labelQueryResult))
-btnQuery.bind('<Return>',lambda e, IDDoor=hab_var.get(),IDAuxOut=hab_var.get(): submit(labelQueryResult))
+btnQuery.bind("<Button>", lambda e, IDDoor=hab_var.get(),IDAuxOut=hab_var.get(): submitQuery(labelQueryResult))
+btnQuery.bind('<Return>', lambda e, IDDoor=hab_var.get(),IDAuxOut=hab_var.get(): submitQuery(labelQueryResult))
 f = Frame(master,style="Custom.TFrame")
 f.grid(row=1,column=0)
 labelQueryResult = Label(master, text="Esperando...:",font=('calibre',11,'bold'),foreground='white',background='black')
@@ -281,28 +308,3 @@ CheckAllFilesExist()
 master.mainloop()
 
 
-"""doorIDs = [str(x) for x in range(1,79,1)]
-AuxOutIDs=[str(x) for x in range(1, 79, 1)]
-doorIDs[49] =    '4028a8d27eb6046b017eb60684ad0164'
-AuxOutIDs[49] = '4028a8d27eb6046b017eb60684b90174'
-list_textButton = ['HAB' + str(x).zfill(2) for x in range(1, 79, 1)]
-for index,element in enumerate(list_textButton):
-    Dict_Door_ID[element]= str(doorIDs[index])
-for index,element in enumerate(list_textButton):
-    Dict_AuxOut_ID[element]= str(AuxOutIDs[index])
-
-        # if self.DoorStatus == '1':
-        #     url_puerta = 'http://192.168.40.82:8098/api/door/remoteOpenById?' + 'doorId=' + self.IDDoor + \
-        #                '&interval=1'+ '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
-        #     response = requests.post(url_puerta, headers=my_headers)
-        #     print(f'json response abrir:   {response.json()}')
-        # elif self.DoorStatus=='2':
-        #     url_puerta = 'http://192.168.40.82:8098/api/door/remoteCloseById?' + 'doorId=' + self.IDDoor + \
-        #                '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
-        #     response = requests.post(url_puerta, headers=my_headers)
-        #     print(f'json response cerrar:   {response.json()}')
-        # else:
-        #     pass
-
-
-"""
