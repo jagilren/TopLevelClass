@@ -34,6 +34,7 @@ class NewWindow(Toplevel):
         self.columnconfigure(1, weight=1)
         self.DoorStatus = '1'
         self.threadAssign = Thread(target=self.DoorOpen_ButtonOpen_ButtonClose, name='threadAssign')
+        self.threadCloseDoor = Thread(target=self.VerifyStatusDoor_CloseDoor, name='threadCloseDoor')
         self.threadUnBlock = Thread(target=self.ButtonOpen_ButtonClose, name='threadUnBlock')
         self.threadBlock = Thread(target=self.ButtonClose, name='threadBlock')
 
@@ -47,8 +48,10 @@ class NewWindow(Toplevel):
         print("Width", windowWidth, "Height", windowHeight)
         self.btnAbrir=Button(self,text='Abrir',command=self.AssignProcess) #height=2, width=3
         self.btnAbrir.grid(row=2,column=0, sticky=NS, pady=20) #,
-        self.btnCerrar=Button(self,text='Cerrar',command=self.API_Close_door,state='DISABLED') #height=2, width=3
-        self.btnCerrar.grid(row=2,column=1, sticky=NS, pady=20) #,
+        if DoorType == 'SEDAN':
+            self.btnCerrar=Button(self,text='Cerrar',command=self.CloseDoorProcess,state='ENABLED') #height=2, width=3
+            self.btnCerrar.grid(row=2,column=1, sticky=NS, pady=20)
+
 
         self.btnLock = Button(self,text='Bloquear ',command=self.ButtonClose) #height=2, width=3
         self.btnLock.grid(row=6,column=0, sticky=NS, pady=20) #,
@@ -66,6 +69,10 @@ class NewWindow(Toplevel):
 
     def AssignProcess(self):
         self.threadAssign.start()
+        self.destroy()
+
+    def CloseDoorProcess(self):
+        self.threadCloseDoor.start()
         self.destroy()
 
     def UnBlockProcess(self):
@@ -95,13 +102,17 @@ class NewWindow(Toplevel):
         response = requests.post(endpoint_Door, headers=self.my_headers)
         print(f'Respuesta JSON API_Close_Door: {response.json()}')
 
+    def VerifyStatusDoor_CloseDoor(self):
+        if API_Door_Status(self.IDDoor) == '2':
+            print(f'Cerrando Puerta Sedan')
+            self.API_Close_door()
 
     def DoorOpen_ButtonOpen_ButtonClose(self):
         #Vamos a Revisar si la puerta está Abierta
         if Dict_Door_Type[self.boton.cget('text')] =='SEDAN':
-            API_Door_Status(self.IDDoor)=='1'
-            print(f'Abriendo Puerta')
-            self.API_door()
+            if API_Door_Status(self.IDDoor)=='1':
+                print(f'Abriendo Puerta')
+                self.API_door()
         else:
             self.API_door()
         print(f'AuxNormalOpen Executed')
