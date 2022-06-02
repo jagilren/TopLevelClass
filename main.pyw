@@ -21,7 +21,7 @@ class MessageBox(Toplevel):
         self.btnOK.pack()
 
 class NewWindow(Toplevel):
-    def __init__(self, master=None,boton=None,IDDoor=None, IDAuxOut=None,my_headers=None):
+    def __init__(self, master=None, boton=None, IDDoor=None, IDAuxOut=None, DoorType=None, my_headers=None):
         super().__init__(master=master)
         self.title( boton.cget('text'))
         self.my_headers=my_headers
@@ -29,6 +29,7 @@ class NewWindow(Toplevel):
         self.boton=boton
         self.IDDoor = IDDoor
         self.IDAuxOut = IDAuxOut
+        self.DoorType = DoorType
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         self.DoorStatus = '1'
@@ -96,14 +97,18 @@ class NewWindow(Toplevel):
 
 
     def DoorOpen_ButtonOpen_ButtonClose(self):
+        #Vamos a Revisar si la puerta está Abierta
+        if Dict_Door_Type[self.boton.cget('text')] =='SEDAN':
+            API_Door_Status(self.IDDoor)=='1'
+            print(f'Abriendo Puerta')
+            self.API_door()
+        else:
+            self.API_door()
         print(f'AuxNormalOpen Executed')
-        #Apertura de Puerta
-        self.API_door()
-        print(f'Abriendo Puerta')
         self.API_AuxButtonNormalOpen()
         #TimeOut for Close Aux Button Recomended 600 secs
         labelQueryResult.config(text="Esperando...", background='black')
-        for element in range(25):
+        for element in range(15):
             time.sleep(1)
             print(f'Threading Time = {element} AuxClose Exeduted')
         self.API_AuxButtonClose()
@@ -253,6 +258,7 @@ def leer_csv(filename):
     return rows
 Dict_Door_ID = leer_csv('doors.txt')
 Dict_AuxOut_ID=leer_csv('AuxOut.txt')
+Dict_Door_Type=leer_csv('doors_type.txt')
 global my_headers
 
 my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json','Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
@@ -285,11 +291,11 @@ radek_line = 2 #Set  ROW  of  matríz of Buttons
 bunka_column = 0
 for element in Dict_Door_ID.keys():
     state = DISABLED
-    if element=='HAB50' or element=='HAB49':
+    if element=='HAB49' or element=='HAB50' or element=='HAB51' or element=='HAB52' :
         state=NORMAL
         btn = Button(f,text=element,padding=10,state=state)
         btn.bind("<Button>",
-                 lambda e, boton = btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')]: NewWindow(master, boton, IDDoor, IDAuxOut,my_headers))
+                 lambda e, boton = btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')],DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, IDDoor, IDAuxOut,DoorType,my_headers))
     else:
         btn = Button(f,text=element,padding=10,state=state)
 
