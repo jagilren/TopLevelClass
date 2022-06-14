@@ -34,7 +34,6 @@ class NewWindow(Toplevel):
         self.columnconfigure(1, weight=1)
         self.DoorStatus = '1'
         self.threadAssign = Thread(target=self.DoorOpen_ButtonOpen_ButtonClose, name='threadAssign')
-        self.threadCloseDoor = Thread(target=self.VerifyStatusDoor_CloseDoor, name='threadCloseDoor')
         self.threadUnBlock = Thread(target=self.ButtonOpen_ButtonClose, name='threadUnBlock')
         self.threadBlock = Thread(target=self.ButtonClose, name='threadBlock')
 
@@ -72,7 +71,8 @@ class NewWindow(Toplevel):
         self.destroy()
 
     def CloseDoorProcess(self):
-        self.threadCloseDoor.start()
+        classthreadCloseDoor = MTThread(name='Labeling', target=self.VerifyStatusDoor_CloseDoor)
+        classthreadCloseDoor.start()
         self.destroy()
 
     def UnBlockProcess(self):
@@ -89,14 +89,14 @@ class NewWindow(Toplevel):
 
 
     def API_door(self):
-        endpoint_Door = 'http://192.168.40.82:8098/api/door/remoteOpenById?' + 'doorId=' + self.IDDoor + \
+        endpoint_Door = 'http://' +Dict_Ini_Params['IPV4AddressServer'] + '/api/door/remoteOpenById?' + 'doorId=' + self.IDDoor + \
                        '&interval=1'+ '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
         #print(f'url_abrir_cerrar_puerta {endpoint_Door}')
         response = requests.post(endpoint_Door, headers=self.my_headers)
         print(f'Respuesta JSON API_DoorOpen: {response.json()}')
 
     def API_Close_door(self):
-        endpoint_Door = 'http://192.168.40.82:8098/api/door/remoteCloseById?doorId=' + self.IDDoor \
+        endpoint_Door = 'http://'+Dict_Ini_Params['IPV4AddressServer'] +'/api/door/remoteCloseById?doorId=' + self.IDDoor \
                         + '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
         #print(f'url_abrir_cerrar_puerta {endpoint_Door}')
         response = requests.post(endpoint_Door, headers=self.my_headers)
@@ -106,33 +106,41 @@ class NewWindow(Toplevel):
         if API_Door_Status(self.IDDoor) == '2':
             print(f'Cerrando Puerta Sedan')
             self.API_Close_door()
+        else:
+            print("Puerta Ya Esta Cerrada.  No se Ejecuta la acción")
+
+    def ButtonOpen_ButtonClose(self):
+        ResponseButtonOpen=self.API_AuxButtonNormalOpen()
+        if ResponseButtonOpen=='success':
+            labelQueryResult.config(text=self.boton.cget('text') +" Desbloqueda", background='red')
+
+        for element in range(int(Dict_Ini_Params['TimeOutButtonNormalOpen'])):
+            time.sleep(1)
+            print(f'Threading Time = {element} Waiting for AuxClose Execute')
+        ResponseButtonClose = self.API_AuxButtonClose()
+            threadButtonClose = MTThread(name='ClosingButton', target=self.API_AuxButtonClose)
+             #threadButtonClose.start()
 
     def DoorOpen_ButtonOpen_ButtonClose(self):
         #Vamos a Revisar si la puerta está Abierta
         if Dict_Door_Type[self.boton.cget('text')] =='SEDAN':
             if API_Door_Status(self.IDDoor)=='1':
                 print(f'Abriendo Puerta')
-                self.API_door()
+                self.API_door() #Abre si está cerrada para SEDAN
+            else:
+                print("Puerta Ya está Abierta.  No se ejecuta la acción")
         else:
-            self.API_door()
+            self.API_door() #Abre de una si es moto o peaton sin importar estado de la puerta
         print(f'AuxNormalOpen Executed')
         self.API_AuxButtonNormalOpen()
-        #TimeOut for Close Aux Button Recomended 600 secs
+
         labelQueryResult.config(text="Esperando...", background='black')
-        for element in range(15):
+        for element in range(int(Dict_Ini_Params['TimeOutButtonNormalOpen'])):
             time.sleep(1)
-            print(f'Threading Time = {element} AuxClose Exeduted')
+            print(f'Threading Time = {element} AuxClose Next to Execute')
         self.API_AuxButtonClose()
 
-    def ButtonOpen_ButtonClose(self):
-        ResponseButtonOpen=self.API_AuxButtonClose()
-        if ResponseButtonOpen=='success':
-            labelQueryResult.config(text=self.boton.cget('text') +" Desbloqueda", background='red')
-        for element in range(15):
-            time.sleep(1)
-            print(f'Threading Time = {element} AuxClose Executed')
-        threadButtonClose = MTThread(name='ClosingButton', target=self.API_AuxButtonClose)
-        threadButtonClose.start()
+
 
     def ButtonClose(self):
         ResponseButtonClose=self.API_AuxButtonClose()
@@ -144,15 +152,15 @@ class NewWindow(Toplevel):
 
 
     def API_AuxButtonNormalOpen(self):
-        endpoint_Aux = 'http://192.168.40.82:8098/api/auxOut/remoteNormalOpenByAuxOutById?id=' + self.IDAuxOut + \
+        endpoint_Aux = 'http://'+Dict_Ini_Params['IPV4AddressServer'] +'/api/auxOut/remoteNormalOpenByAuxOutById?id=' + self.IDAuxOut + \
                      '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
         response = requests.post(endpoint_Aux, headers=self.my_headers)
         print(f'json response NormalOpenAuxOut:   {response.json()}')
         return response.json()['message']
-        time.sleep(10)
+        time.sleep(5)
 
     def API_AuxButtonClose(self):
-        endpoint_Aux = 'http://192.168.40.82:8098/api/auxOut/remoteCloseByAuxOutById?id=' + self.IDAuxOut + \
+        endpoint_Aux = 'http://'+Dict_Ini_Params['IPV4AddressServer'] +'/api/auxOut/remoteCloseByAuxOutById?id=' + self.IDAuxOut + \
                      '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
         response = requests.post(endpoint_Aux, headers=self.my_headers)
         print(f'json response CloseAuxOut:   {response.json()}')
@@ -167,7 +175,7 @@ class NewWindow(Toplevel):
         time.sleep(5)
         self.destroy()
         print(f'HEADERS:   {self.my_headers}')
-        print(f'json response abrir:   {response.json()}')
+        #print(f'json response abrir:{response.json()}')
 
     def API_print(self, response):
         print(f'{response} Tipo de Respuesta {type(response)}')
@@ -229,7 +237,7 @@ def submitQuery(labelQueryResult):
 
 def API_Door_Status(IDDoor):
     print(f'Api Status Ejecutado, {IDDoor}')
-    endpoint_Door = 'http://192.168.40.82:8098/api/door/doorStateById?' + 'doorId=' + IDDoor + \
+    endpoint_Door = 'http://' +  Dict_Ini_Params['IPV4AddressServer'] +'/api/door/doorStateById?' + 'doorId='+IDDoor + \
      '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
     try:
         response = requests.get(endpoint_Door, headers=my_headers)
@@ -270,6 +278,7 @@ def leer_csv(filename):
 Dict_Door_ID = leer_csv('doors.txt')
 Dict_AuxOut_ID=leer_csv('AuxOut.txt')
 Dict_Door_Type=leer_csv('doors_type.txt')
+Dict_Ini_Params=leer_csv('zkt.ini')
 global my_headers
 
 my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json','Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
