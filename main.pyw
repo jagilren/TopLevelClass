@@ -114,12 +114,12 @@ class NewWindow(Toplevel):
         if ResponseButtonOpen=='success':
             labelQueryResult.config(text=self.boton.cget('text') +" Desbloqueda", background='red')
 
-        for element in range(int(Dict_Ini_Params['TimeOutButtonNormalOpen'])):
+        for element1 in range(int(Dict_Ini_Params['TimeOutButtonNormalOpen'])):
             time.sleep(1)
-            print(f'Threading Time = {element} Waiting for AuxClose Execute')
+            print(f'Threading Time = {element1} Waiting for AuxClose Execute threadUnBlockProcess')
         ResponseButtonClose = self.API_AuxButtonClose()
-            threadButtonClose = MTThread(name='ClosingButton', target=self.API_AuxButtonClose)
-             #threadButtonClose.start()
+        #threadButtonClose = MTThread(name='ClosingButton', target=self.API_AuxButtonClose)
+        #threadButtonClose.start()
 
     def DoorOpen_ButtonOpen_ButtonClose(self):
         #Vamos a Revisar si la puerta está Abierta
@@ -131,13 +131,14 @@ class NewWindow(Toplevel):
                 print("Puerta Ya está Abierta.  No se ejecuta la acción")
         else:
             self.API_door() #Abre de una si es moto o peaton sin importar estado de la puerta
-        print(f'AuxNormalOpen Executed')
+        print(f'Wait...Five seconds for AuxNormalOpen Execution')
+        time.sleep(5)
         self.API_AuxButtonNormalOpen()
 
         labelQueryResult.config(text="Esperando...", background='black')
         for element in range(int(Dict_Ini_Params['TimeOutButtonNormalOpen'])):
             time.sleep(1)
-            print(f'Threading Time = {element} AuxClose Next to Execute')
+            print(f'Threading Time = {element} AuxClose Next to Execute threadAssignProcess')
         self.API_AuxButtonClose()
 
 
