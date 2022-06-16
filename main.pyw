@@ -131,8 +131,9 @@ class NewWindow(Toplevel):
                 print("Puerta Ya está Abierta.  No se ejecuta la acción")
         else:
             self.API_door() #Abre de una si es moto o peaton sin importar estado de la puerta
-        print(f'Wait...Five seconds for AuxNormalOpen Execution')
-        time.sleep(5)
+        print(f'Wait...12 seconds for AuxNormalOpen Execution')
+        time.sleep(7)
+        self.API_door()  # Abre de una si es moto Repite ejecución para Cantoneras desobedientes
         self.API_AuxButtonNormalOpen()
 
         labelQueryResult.config(text="Esperando...", background='black')
