@@ -1,32 +1,35 @@
-# https://www.tutorialspoint.com/create-multiple-buttons-with-different-command-function-in-tkinter
-# https://www.geeksforgeeks.org/open-a-new-window-with-a-button-in-python-tkinter/
 # This will import all the widgets
 # and modules which are available in
 # tkinter and ttk module
 import requests
 import csv
 from tkinter import *
+from tkinter import messagebox
 from tkinter.ttk import *
 import tkinter.messagebox
 from tkinter.constants import DISABLED, NORMAL
-import time
-from  threading import Thread
+import time, datetime
+from threading import Thread
 import os
+from subprocess import *
+import subprocess
+
 
 
 class MessageBox(Toplevel):
-    def __init__(self ):
+    def __init__(self):
         super().__init__(master=master)
-        self.btnOK = Button(self,text='OK ',command=self.destroy()) #height=2, width=3
+        self.btnOK = Button(self, text='OK ', command=self.destroy())  # height=2, width=3
         self.btnOK.pack()
+
 
 class NewWindow(Toplevel):
     def __init__(self, master=None, boton=None, IDDoor=None, IDAuxOut=None, DoorType=None, my_headers=None):
         super().__init__(master=master)
-        self.title( boton.cget('text'))
-        self.my_headers=my_headers
+        self.title(boton.cget('text'))
+        self.my_headers = my_headers
         self.geometry("400x200")
-        self.boton=boton
+        self.boton = boton
         self.IDDoor = IDDoor
         self.IDAuxOut = IDAuxOut
         self.DoorType = DoorType
@@ -38,33 +41,32 @@ class NewWindow(Toplevel):
         self.threadBlock = Thread(target=self.ButtonClose, name='threadBlock')
 
         # Gets the requested values of the height and widht.
-        windowWidth = self.winfo_reqwidth() *2
-        windowHeight = self.winfo_reqheight() *2
+        windowWidth = self.winfo_reqwidth() * 2
+        windowHeight = self.winfo_reqheight() * 2
         # Gets both half the screen width/height and window width/height
         positionRight = int(self.winfo_screenwidth() / 2 - windowWidth / 2)
         positionDown = int(self.winfo_screenheight() / 2 - windowHeight / 2)
         self.geometry("+{}+{}".format(positionRight, positionDown))
         print("Width", windowWidth, "Height", windowHeight)
-        self.btnAbrir=Button(self,text='Abrir',command=self.AssignProcess) #height=2, width=3
-        self.btnAbrir.grid(row=2,column=0, sticky=NS, pady=20) #,
-        if DoorType == 'SEDAN':
-            self.btnCerrar=Button(self,text='Cerrar',command=self.CloseDoorProcess,state='ENABLED') #height=2, width=3
-            self.btnCerrar.grid(row=2,column=1, sticky=NS, pady=20)
+        self.btnAbrir = Button(self, text='Abrir', command=self.AssignProcess)  # height=2, width=3
+        self.btnAbrir.grid(row=2, column=0, sticky=NS, pady=20)  # ,
+        if DoorType == 'HATCHBACK':
+            self.btnCerrar = Button(self, text='Cerrar', command=self.CloseDoorProcess,
+                                    state='ENABLED')  # height=2, width=3
+            self.btnCerrar.grid(row=2, column=1, sticky=NS, pady=20)
 
+        self.btnLock = Button(self, text='Bloquear ', command=self.ButtonClose)  # height=2, width=3
+        self.btnLock.grid(row=6, column=0, sticky=NS, pady=20)  # ,
 
-        self.btnLock = Button(self,text='Bloquear ',command=self.ButtonClose) #height=2, width=3
-        self.btnLock.grid(row=6,column=0, sticky=NS, pady=20) #,
-
-        self.btnUnLock = Button(self,text='Des-Bloquear', command=self.UnBlockProcess) #height=2, width=3
-        self.btnUnLock.grid(row=6,column=1, sticky=NS, pady=20) #,
+        self.btnUnLock = Button(self, text='Des-Bloquear', command=self.UnBlockProcess)  # height=2, width=3
+        self.btnUnLock.grid(row=6, column=1, sticky=NS, pady=20)  # ,
 
         labelStatusDoor = Label(self, textvariable="Puerta Abierta", relief=RAISED)
-        labelStatusDoor.grid(row=7,column=0, pady=20, columnspan=2, rowspan=2,sticky=NSEW)
+        labelStatusDoor.grid(row=7, column=0, pady=20, columnspan=2, rowspan=2, sticky=NSEW)
         labelStatusDoor.config(text="Open_Door")
         print(self.btnUnLock.grid_info())
         self.focus()
         self.grab_set()
-
 
     def AssignProcess(self):
         self.threadAssign.start()
@@ -87,53 +89,56 @@ class NewWindow(Toplevel):
         threadLabelWaiting.start()
         self.destroy()
 
-
     def API_door(self):
-        endpoint_Door = 'http://' +Dict_Ini_Params['IPV4AddressServer'] + '/api/door/remoteOpenById?' + 'doorId=' + self.IDDoor + \
-                       '&interval=1'+ '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
-        #print(f'url_abrir_cerrar_puerta {endpoint_Door}')
+        endpoint_Door = 'http://' + Dict_Ini_Params[
+            'IPV4AddressServer'] + '/api/door/remoteOpenById?' + 'doorId=' + self.IDDoor + \
+                        '&interval=1' + '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
+        # print(f'url_abrir_cerrar_puerta {endpoint_Door}')
         response = requests.post(endpoint_Door, headers=self.my_headers)
         print(f'Respuesta JSON API_DoorOpen: {response.json()}')
 
     def API_Close_door(self):
-        endpoint_Door = 'http://'+Dict_Ini_Params['IPV4AddressServer'] +'/api/door/remoteCloseById?doorId=' + self.IDDoor \
+        endpoint_Door = 'http://' + Dict_Ini_Params[
+            'IPV4AddressServer'] + '/api/door/remoteCloseById?doorId=' + self.IDDoor \
                         + '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
-        #print(f'url_abrir_cerrar_puerta {endpoint_Door}')
+        # print(f'url_abrir_cerrar_puerta {endpoint_Door}')
         response = requests.post(endpoint_Door, headers=self.my_headers)
         print(f'Respuesta JSON API_Close_Door: {response.json()}')
 
     def VerifyStatusDoor_CloseDoor(self):
-        if API_Door_Status(self.IDDoor) == '2':
+        if API_Door_Status(self.IDDoor) == '2': #Verificamos que está abierta
             print(f'Cerrando Puerta Sedan')
-            self.API_Close_door()
+            self.API_door()  #Enviamos Pulso de Abrir Puerta para que esta se Cierre, pues la API Door/remote_Close_ByID no cierra la puerta
         else:
             print("Puerta Ya Esta Cerrada.  No se Ejecuta la acción")
 
     def ButtonOpen_ButtonClose(self):
-        ResponseButtonOpen=self.API_AuxButtonNormalOpen()
-        if ResponseButtonOpen=='success':
-            labelQueryResult.config(text=self.boton.cget('text') +" Desbloqueda", background='red')
+        ResponseButtonOpen = self.API_AuxButtonNormalOpen()
+        if ResponseButtonOpen == 'success':
+            labelQueryResult.config(text=self.boton.cget('text') + " Desbloqueda", background='red')
 
         for element1 in range(int(Dict_Ini_Params['TimeOutButtonNormalOpen'])):
             time.sleep(1)
             print(f'Threading Time = {element1} Waiting for AuxClose Execute threadUnBlockProcess')
         ResponseButtonClose = self.API_AuxButtonClose()
-        #threadButtonClose = MTThread(name='ClosingButton', target=self.API_AuxButtonClose)
-        #threadButtonClose.start()
+        # threadButtonClose = MTThread(name='ClosingButton', target=self.API_AuxButtonClose)
+        # threadButtonClose.start()
 
     def DoorOpen_ButtonOpen_ButtonClose(self):
-        #Vamos a Revisar si la puerta está Abierta
-        if Dict_Door_Type[self.boton.cget('text')] =='SEDAN':
-            if API_Door_Status(self.IDDoor)=='1':
+        # Vamos a Revisar si la puerta está Abierta
+        if Dict_Door_Type[self.boton.cget('text')] == 'SEDAN':
+            if API_Door_Status(self.IDDoor) == '1':
                 print(f'Abriendo Puerta')
-                self.API_door() #Abre si está cerrada para SEDAN
+                self.API_door()  # Abre si está cerrada para SEDAN
             else:
                 print("Puerta Ya está Abierta.  No se ejecuta la acción")
         else:
-            self.API_door() #Abre de una si es moto o peaton sin importar estado de la puerta
-        print(f'Wait...12 seconds for AuxNormalOpen Execution')
-        time.sleep(7)
-        self.API_door()  # Abre de una si es moto Repite ejecución para Cantoneras desobedientes
+            self.API_door()  # Abre de una si es moto o peaton sin importar estado de la puerta
+            print(f'Wait...07 seconds for AuxNormalOpen Execution')
+            time.sleep(7)
+            self.API_door()  # Abre de una si es moto Repite ejecución para Cantoneras desobedientes
+        time.sleep(5)
+        print(f'Wait...05 seconds for AuxNormalOpen Execution')
         self.API_AuxButtonNormalOpen()
 
         labelQueryResult.config(text="Esperando...", background='black')
@@ -142,28 +147,27 @@ class NewWindow(Toplevel):
             print(f'Threading Time = {element} AuxClose Next to Execute threadAssignProcess')
         self.API_AuxButtonClose()
 
-
-
     def ButtonClose(self):
-        ResponseButtonClose=self.API_AuxButtonClose()
-        if ResponseButtonClose=='success':
-            labelQueryResult.config(text=self.boton.cget('text') +" Bloqueada", background='green')
+        ResponseButtonClose = self.API_AuxButtonClose()
+        if ResponseButtonClose == 'success':
+            labelQueryResult.config(text=self.boton.cget('text') + " Bloqueada", background='green')
         threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
         threadLabelWaiting.start()
         self.destroy()
 
-
     def API_AuxButtonNormalOpen(self):
-        endpoint_Aux = 'http://'+Dict_Ini_Params['IPV4AddressServer'] +'/api/auxOut/remoteNormalOpenByAuxOutById?id=' + self.IDAuxOut + \
-                     '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
+        endpoint_Aux = 'http://' + Dict_Ini_Params[
+            'IPV4AddressServer'] + '/api/auxOut/remoteNormalOpenByAuxOutById?id=' + self.IDAuxOut + \
+                       '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
         response = requests.post(endpoint_Aux, headers=self.my_headers)
         print(f'json response NormalOpenAuxOut:   {response.json()}')
         return response.json()['message']
         time.sleep(5)
 
     def API_AuxButtonClose(self):
-        endpoint_Aux = 'http://'+Dict_Ini_Params['IPV4AddressServer'] +'/api/auxOut/remoteCloseByAuxOutById?id=' + self.IDAuxOut + \
-                     '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
+        endpoint_Aux = 'http://' + Dict_Ini_Params[
+            'IPV4AddressServer'] + '/api/auxOut/remoteCloseByAuxOutById?id=' + self.IDAuxOut + \
+                       '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
         response = requests.post(endpoint_Aux, headers=self.my_headers)
         print(f'json response CloseAuxOut:   {response.json()}')
         return response.json()['message']
@@ -177,7 +181,7 @@ class NewWindow(Toplevel):
         time.sleep(5)
         self.destroy()
         print(f'HEADERS:   {self.my_headers}')
-        #print(f'json response abrir:{response.json()}')
+        # print(f'json response abrir:{response.json()}')
 
     def API_print(self, response):
         print(f'{response} Tipo de Respuesta {type(response)}')
@@ -185,11 +189,12 @@ class NewWindow(Toplevel):
         print(f"Headers Content Type: {response.headers['content-type']}")
         print(f'Yeison Final::{response.json()}')
 
-def validate_entry(text,new_text):
+
+def validate_entry(text, new_text):
     try:
-        if not(new_text):
+        if not (new_text):
             return TRUE
-        if len(new_text)>2:
+        if len(new_text) > 2:
             return FALSE
         if int(new_text) > 78:
             return FALSE
@@ -201,71 +206,80 @@ def validate_entry(text,new_text):
     finally:
         print(f'Entraste al finally')
 
+
 def LabelWaiting():
     for tiempo in range(5):
         time.sleep(1)
-        print ("Waiting for Change Text Label")
+        print("Waiting for Change Text Label")
     labelQueryResult.config(text="Esperando...", background='black')
 
+
 class MTThread(Thread):
-    def __init__(self, name = None, target = None):
+    def __init__(self, name=None, target=None):
         self.mt_name = name
         self.mt_target = target
-        Thread.__init__(self, name = name, target = target)
+        Thread.__init__(self, name=name, target=target)
+
     def start(self):
         super().start()
-        Thread.__init__(self, name = self.mt_name, target = self.mt_target)
+        Thread.__init__(self, name=self.mt_name, target=self.mt_target)
+
     def run(self):
         super().run()
-        Thread.__init__(self, name = self.mt_name, target = self.mt_target)
+        Thread.__init__(self, name=self.mt_name, target=self.mt_target)
+
 
 threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
 
 
+
+
 def submitQuery(labelQueryResult):
-    if not(hab_var.get()):
+    if not (hab_var.get()):
         return
-    prefixHab='HAB0'+ hab_var.get() if len(hab_var.get()) == 1 else 'HAB' + hab_var.get()
-    IDAuxOut=Dict_AuxOut_ID[prefixHab]
-    IDDoor= Dict_Door_ID[prefixHab]
+    prefixHab = 'HAB0' + hab_var.get() if len(hab_var.get()) == 1 else 'HAB' + hab_var.get()
+    IDAuxOut = Dict_AuxOut_ID[prefixHab]
+    IDDoor = Dict_Door_ID[prefixHab]
     print(labelQueryResult.cget('text'))
-    if (API_Door_Status(IDDoor)== '1'):
+    if (API_Door_Status(IDDoor) == '1'):
         labelQueryResult.config(text=prefixHab + " Puerta está Cerrada", background="green")
     elif (API_Door_Status(IDDoor) == '2'):
-        labelQueryResult.config(text=prefixHab  + " Puerta está Abierta", background="red")
-    elif (API_Door_Status(IDDoor) not in ['1','2']):
-        labelQueryResult.config(text=prefixHab  + " Estado del Sensor Desconocido", background="purple")
+        labelQueryResult.config(text=prefixHab + " Puerta está Abierta", background="red")
+    elif (API_Door_Status(IDDoor) not in ['1', '2']):
+        labelQueryResult.config(text=prefixHab + " Estado del Sensor Desconocido", background="purple")
     threadLabelWaiting.start()
+
 
 def API_Door_Status(IDDoor):
     print(f'Api Status Ejecutado, {IDDoor}')
-    endpoint_Door = 'http://' +  Dict_Ini_Params['IPV4AddressServer'] +'/api/door/doorStateById?' + 'doorId='+IDDoor + \
-     '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
+    endpoint_Door = 'http://' + Dict_Ini_Params['IPV4AddressServer'] + '/api/door/doorStateById?' + 'doorId=' + IDDoor + \
+                    '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
     try:
         response = requests.get(endpoint_Door, headers=my_headers)
         print(f'json response:   {response.json()}')
-        DoorStatus=response.json()['data'][0]['sensor']
+        DoorStatus = response.json()['data'][0]['sensor']
         print(f'Estado Sensor Puerta= {DoorStatus}')
         return DoorStatus
     except:
-        retur="Puerta Inexistente"
+        retur = "Puerta Inexistente"
 
 
 # Specify path
-
 
 def VerificaTXT(filetxt):
     isExist = os.path.exists(filetxt)
     return isExist
 
+
 def CheckAllFilesExist(queryexist=True):
-    list_configFiles=['./AuxOut.txt','./doors.txt','./RAM4GB.png']
+    list_configFiles = ['./AuxOut.txt', './doors.txt', './RAM4GB.png']
     for ConfigFiles in list_configFiles:
-        queryexist=queryexist*VerificaTXT(ConfigFiles)
+        queryexist = queryexist * VerificaTXT(ConfigFiles)
     if (queryexist):
         pass
     else:
         master.destroy()
+
 
 def leer_csv(filename):
     fields = []
@@ -277,51 +291,75 @@ def leer_csv(filename):
             # door_ids=row.split(",")
             rows[row[0]] = row[1]
     return rows
-Dict_Door_ID = leer_csv('doors.txt')
-Dict_AuxOut_ID=leer_csv('AuxOut.txt')
-Dict_Door_Type=leer_csv('doors_type.txt')
-Dict_Ini_Params=leer_csv('zkt.ini')
-global my_headers
 
-my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json','Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
+
+Dict_Door_ID = leer_csv('doors.txt')
+Dict_AuxOut_ID = leer_csv('AuxOut.txt')
+Dict_Door_Type = leer_csv('doors_type.txt')
+Dict_Ini_Params = leer_csv('zkt.ini')
+global my_headers
+my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
+              'Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
 master = Tk()
 master.geometry("1140x640")
 f = Frame(master)
+f_foot = Frame(master)
 
 style = Style()
-style.configure('TButton', font =('Tahoma', 10 ),borderwidth = '4')
-style.map('TButton', foreground = [('active', '!disabled', ('green'))],background = [('active', 'black')])
+style.configure('TButton', font=('Tahoma', 10), borderwidth='4')
+style.map('TButton', foreground=[('active', '!disabled', ('green'))], background=[('active', 'black')])
 
-style.configure('TFrame',bordercolor='pink',background='#68839B',borderwidth=1)
+style.configure('TFrame', bordercolor='pink', background='#68839B', borderwidth=1)
 
-labelTitleQuery = Label(master, text="Consulta Estado",font=('calibre',11,'bold'), padding=1,foreground="white",background='black')
-labelTitleQuery.grid(row=62,column=0,sticky = W,pady=2)
+labelTitleQuery = Label(f_foot, text="Consulta Estado", font=('calibre', 11, 'bold'), padding=1, foreground="white",
+                        background='black')
+labelTitleQuery.grid(row=62, column=0, sticky=W, pady=2)
 
 hab_var = StringVar()
-hab_entry = Entry(master,textvariable=hab_var, font=('calibre',11,'bold'),width=5, validate="key",validatecommand=(master.register(validate_entry), "%S", "%P"))
-hab_entry.grid(row=68,column=0,sticky = W)
-btnQuery = Button(master, text="CONSULTAR", padding=1,command=NONE,width=15)
-btnQuery.grid(row=70,column=0,sticky = W,pady=2)
-btnQuery.bind("<Button>", lambda e, IDDoor=hab_var.get(),IDAuxOut=hab_var.get(): submitQuery(labelQueryResult))
-btnQuery.bind('<Return>', lambda e, IDDoor=hab_var.get(),IDAuxOut=hab_var.get(): submitQuery(labelQueryResult))
-f = Frame(master,style="Custom.TFrame")
-f.grid(row=1,column=0)
-labelQueryResult = Label(master, text="Esperando...:",font=('calibre',11,'bold'),foreground='white',background='black')
-labelQueryResult.grid(row=72,column=0,pady=2,sticky=W,columnspan=20)
+f_foot = Frame(master)
+f_foot.grid(row=70, column=0, columnspan=20, rowspan=2, sticky=W)
 
-radek_line = 2 #Set  ROW  of  matríz of Buttons
+f_query = Frame(f_foot)
+f_query.grid(columns=20, row=0, sticky=W)
+# f_log.grid(column=0, row=0, columnspan=1, rowspan=1)
+# f_separator=Frame(f_foot)
+# f_separator.grid(column=5, row=0, columnspan=1,rowspan=1)
+
+global logListBox
+logListBox = Listbox(f_foot, width=180)
+logListBox.grid(column=0, rowspan=2, columnspan=20)
+logListBox.configure(background="skyblue4", foreground="white", font=('Aerial 13'))
+# label_Separator=Label(f_foot,text="HO")
+# label_Separator.grid(row=0,column=3,columnspan=1,rowspan=5)
+
+hab_entry = Entry(f_query, textvariable=hab_var, font=('calibre', 11, 'bold'), width=5, validate="key",
+                  validatecommand=(master.register(validate_entry), "%S", "%P"))
+hab_entry.grid(row=0, column=4, sticky=W)
+btnQuery = Button(f_query, text="CONSULTAR", padding=1, command=NONE, width=15)
+btnQuery.grid(row=1, column=4, pady=2, sticky=W)
+btnQuery.bind("<Button>", lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var.get(): submitQuery(labelQueryResult))
+btnQuery.bind('<Return>', lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var.get(): submitQuery(labelQueryResult))
+f = Frame(master, style="Custom.TFrame")
+f.grid(row=0, column=0)
+labelQueryResult = Label(f_query, text="Esperando...:", font=('calibre', 11, 'bold'), foreground='white',
+                         background='black')
+labelQueryResult.grid(row=3, column=4, pady=2, sticky=W)
+
+radek_line = 2  # Set  ROW  of  matríz of Buttons
 bunka_column = 0
 for element in Dict_Door_ID.keys():
     state = DISABLED
-    if element=='HAB49' or element=='HAB50' or element=='HAB51' or element=='HAB52' :
-        state=NORMAL
-        btn = Button(f,text=element,padding=10,state=state)
+    if element == 'HAB49' or element == 'HAB50' or element == 'HAB51' or element == 'HAB52':
+        state = NORMAL
+        btn = Button(f, text=element, padding=10, state=state)
         btn.bind("<Button>",
-                 lambda e, boton = btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')],DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, IDDoor, IDAuxOut,DoorType,my_headers))
+                 lambda e, boton=btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')],
+                        DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, IDDoor, IDAuxOut, DoorType,
+                                                                             my_headers))
     else:
-        btn = Button(f,text=element,padding=10,state=state)
+        btn = Button(f, text=element, padding=10, state=state)
 
-    btn.grid(row=radek_line, column=bunka_column,padx=2,pady=2,sticky=W)
+    btn.grid(row=radek_line, column=bunka_column, padx=2, pady=2, sticky=W)
 
     bunka_column += 1
     if bunka_column == 10:  # changed this variable to make it easier to test code.
@@ -329,10 +367,34 @@ for element in Dict_Door_ID.keys():
         radek_line += 1
 master.title('Apertura Puertas Motel Classic')
 master.config(bg='#68839B')
-p1 = PhotoImage(file ='RAM4GB.png')
-p1=master.iconphoto(True, p1)
+p1 = PhotoImage(file='RAM4GB.png')
+p1 = master.iconphoto(True, p1)
+
+def checkPing():
+    my_address =Dict_Ini_Params['IPV4AddressServer'].split(':')[0]
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    output = Popen(["ping", "-n", "2", my_address], startupinfo=startupinfo, stdout=PIPE).communicate()[0]
+    return output.find(b'tiempo') # If return -1, then Host inaccesible
+def WarningConectivity():
+    while True:
+        if logListBox.size() > 8:
+            logListBox.delete(0, END)
+        y=checkPing()
+        if y==-1:
+            print('Servidor de Apertura de Puertas Caido o Fuera de Línea')
+            ct = datetime.datetime.now()
+            logListBox.configure(background="LightBlue1", foreground="red", font=('Aerial 13'))
+            logListBox.insert(0, "Servidor de Apertura de Puertas Caido o Fuera de Línea" + ' --- ' + str(ct).split('.')[0])
+        elif y>=0:
+            print('Servidor de Aperturas de Puertas Online')
+            ct = datetime.datetime.now()
+            logListBox.configure(background="skyblue4", foreground="white", font=('Aerial 13'))
+            logListBox.insert(0,"Servidor de Apertura está Conectado   en línea" + ' --- ' + str(ct).split('.')[0])
+        time.sleep(60)
+threadCheckConectivity = MTThread(name='Conectivity', target=WarningConectivity)
+threadCheckConectivity.daemon =True
+threadCheckConectivity.start()
 
 CheckAllFilesExist()
 master.mainloop()
-
-
