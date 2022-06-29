@@ -5,6 +5,7 @@ import requests
 import csv
 from tkinter import *
 from tkinter import messagebox
+from tkinter import simpledialog
 from tkinter.ttk import *
 import tkinter.messagebox
 from tkinter.constants import DISABLED, NORMAL
@@ -13,7 +14,6 @@ from threading import Thread
 import os
 from subprocess import *
 import subprocess
-
 
 
 class MessageBox(Toplevel):
@@ -69,6 +69,7 @@ class NewWindow(Toplevel):
         self.grab_set()
 
     def AssignProcess(self):
+        self.threadAssign.daemon=True
         self.threadAssign.start()
         self.destroy()
 
@@ -78,12 +79,14 @@ class NewWindow(Toplevel):
         self.destroy()
 
     def UnBlockProcess(self):
+        self.threadUnBlock.daemon=True
         self.threadUnBlock.start()
         threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
         threadLabelWaiting.start()
         self.destroy()
 
     def BlockProcess(self):
+        self.threadUnBlock.daemon=True
         self.threadUnBlock.start()
         threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
         threadLabelWaiting.start()
@@ -132,7 +135,7 @@ class NewWindow(Toplevel):
                 self.API_door()  # Abre si está cerrada para SEDAN
             else:
                 print("Puerta Ya está Abierta.  No se ejecuta la acción")
-        else:
+        else: #Si es Moto o Peaton
             self.API_door()  # Abre de una si es moto o peaton sin importar estado de la puerta
             print(f'Wait...07 seconds for AuxNormalOpen Execution')
             time.sleep(7)
@@ -140,12 +143,19 @@ class NewWindow(Toplevel):
         time.sleep(5)
         print(f'Wait...05 seconds for AuxNormalOpen Execution')
         self.API_AuxButtonNormalOpen()
+        ct = datetime.datetime.now()
+        logListBox.insert(0, self.boton.cget('text') + " DESBLOQUEADA " + ' --- ' + str(ct).split('.')[0])
+        time.sleep(2)
+        ct = datetime.datetime.now()
+        logListBox.insert(0, self.boton.cget('text') + " ABIERTA " + ' --- ' + str(ct).split('.')[0])
 
         labelQueryResult.config(text="Esperando...", background='black')
         for element in range(int(Dict_Ini_Params['TimeOutButtonNormalOpen'])):
             time.sleep(1)
             print(f'Threading Time = {element} AuxClose Next to Execute threadAssignProcess')
         self.API_AuxButtonClose()
+        ct = datetime.datetime.now()
+        logListBox.insert(0, self.boton.cget('text') + " BLOQUEADA " + ' --- ' + str(ct).split('.')[0])
 
     def ButtonClose(self):
         ResponseButtonClose = self.API_AuxButtonClose()
@@ -234,8 +244,11 @@ threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
 
 
 
-def submitQuery(labelQueryResult):
+def submitQuery(labelQueryResult,BioSecurityStatus):
     if not (hab_var.get()):
+        return
+    if BioSecurityStatus==False:
+        infoconexion=messagebox.showinfo("Error de Conexión", "Servidor de Puertas Desconectado \n Verifique RED")
         return
     prefixHab = 'HAB0' + hab_var.get() if len(hab_var.get()) == 1 else 'HAB' + hab_var.get()
     IDAuxOut = Dict_AuxOut_ID[prefixHab]
@@ -297,9 +310,11 @@ Dict_Door_ID = leer_csv('doors.txt')
 Dict_AuxOut_ID = leer_csv('AuxOut.txt')
 Dict_Door_Type = leer_csv('doors_type.txt')
 Dict_Ini_Params = leer_csv('zkt.ini')
+
 global my_headers
 my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
               'Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
+BioSecurityStatus=False
 master = Tk()
 master.geometry("1140x640")
 f = Frame(master)
@@ -337,8 +352,8 @@ hab_entry = Entry(f_query, textvariable=hab_var, font=('calibre', 11, 'bold'), w
 hab_entry.grid(row=0, column=4, sticky=W)
 btnQuery = Button(f_query, text="CONSULTAR", padding=1, command=NONE, width=15)
 btnQuery.grid(row=1, column=4, pady=2, sticky=W)
-btnQuery.bind("<Button>", lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var.get(): submitQuery(labelQueryResult))
-btnQuery.bind('<Return>', lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var.get(): submitQuery(labelQueryResult))
+btnQuery.bind("<Button>", lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var.get(): submitQuery(labelQueryResult,BioSecurityStatus))
+btnQuery.bind('<Return>', lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var.get(): submitQuery(labelQueryResult,BioSecurityStatus))
 f = Frame(master, style="Custom.TFrame")
 f.grid(row=0, column=0)
 labelQueryResult = Label(f_query, text="Esperando...:", font=('calibre', 11, 'bold'), foreground='white',
@@ -371,14 +386,20 @@ p1 = PhotoImage(file='RAM4GB.png')
 p1 = master.iconphoto(True, p1)
 
 def checkPing():
+    global BioSecurityStatus
     my_address =Dict_Ini_Params['IPV4AddressServer'].split(':')[0]
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     output = Popen(["ping", "-n", "2", my_address], startupinfo=startupinfo, stdout=PIPE).communicate()[0]
+    if output.find(b'tiempo') >0:
+         BioSecurityStatus=True
+    elif output.find(b'tiempo') == -1:
+        BioSecurityStatus = False
+    print(f'BioSecurityStatus={BioSecurityStatus}')
     return output.find(b'tiempo') # If return -1, then Host inaccesible
 def WarningConectivity():
     while True:
-        if logListBox.size() > 8:
+        if logListBox.size() > 16:
             logListBox.delete(0, END)
         y=checkPing()
         if y==-1:
@@ -391,7 +412,7 @@ def WarningConectivity():
             ct = datetime.datetime.now()
             logListBox.configure(background="skyblue4", foreground="white", font=('Aerial 13'))
             logListBox.insert(0,"Servidor de Apertura está Conectado   en línea" + ' --- ' + str(ct).split('.')[0])
-        time.sleep(60)
+        time.sleep(600)
 threadCheckConectivity = MTThread(name='Conectivity', target=WarningConectivity)
 threadCheckConectivity.daemon =True
 threadCheckConectivity.start()
