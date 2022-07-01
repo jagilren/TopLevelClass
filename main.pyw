@@ -143,6 +143,7 @@ class NewWindow(Toplevel):
         time.sleep(5)
         print(f'Wait...05 seconds for AuxNormalOpen Execution')
         self.API_AuxButtonNormalOpen()
+        #Vamos a cambiar las dos intrucciones siguientes por una function que escriba sobre el ListBox log
         ct = datetime.datetime.now()
         logListBox.insert(0, self.boton.cget('text') + " DESBLOQUEADA " + ' --- ' + str(ct).split('.')[0])
         time.sleep(2)
@@ -199,6 +200,9 @@ class NewWindow(Toplevel):
         print(f"Headers Content Type: {response.headers['content-type']}")
         print(f'Yeison Final::{response.json()}')
 
+    def Write_logListBox(self,texto, colorista):
+
+
 
 def validate_entry(text, new_text):
     try:
@@ -240,8 +244,6 @@ class MTThread(Thread):
 
 
 threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
-
-
 
 
 def submitQuery(labelQueryResult,BioSecurityStatus):
