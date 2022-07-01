@@ -68,6 +68,15 @@ class NewWindow(Toplevel):
         self.focus()
         self.grab_set()
 
+    def Write_logListBox(self,texto):
+        ct = datetime.datetime.now()
+        logListBox.insert(0, self.boton.cget('text') + texto + ' ' + str(ct).split('.')[0])
+
+    def foreground_logListBox(self,colorista):
+        ct = datetime.datetime.now()
+        logListBox.configure(background="skyblue4", foreground=colorista, font=('Aerial 13'))
+
+
     def AssignProcess(self):
         self.threadAssign.daemon=True
         self.threadAssign.start()
@@ -143,20 +152,16 @@ class NewWindow(Toplevel):
         time.sleep(5)
         print(f'Wait...05 seconds for AuxNormalOpen Execution')
         self.API_AuxButtonNormalOpen()
-        #Vamos a cambiar las dos intrucciones siguientes por una function que escriba sobre el ListBox log
-        ct = datetime.datetime.now()
-        logListBox.insert(0, self.boton.cget('text') + " DESBLOQUEADA " + ' --- ' + str(ct).split('.')[0])
+        self.Write_logListBox('--- DESBLOQUEADA ---')
+        self.foreground_logListBox("goldenrod1")
         time.sleep(2)
-        ct = datetime.datetime.now()
-        logListBox.insert(0, self.boton.cget('text') + " ABIERTA " + ' --- ' + str(ct).split('.')[0])
-
         labelQueryResult.config(text="Esperando...", background='black')
         for element in range(int(Dict_Ini_Params['TimeOutButtonNormalOpen'])):
             time.sleep(1)
             print(f'Threading Time = {element} AuxClose Next to Execute threadAssignProcess')
         self.API_AuxButtonClose()
-        ct = datetime.datetime.now()
-        logListBox.insert(0, self.boton.cget('text') + " BLOQUEADA " + ' --- ' + str(ct).split('.')[0])
+        self.Write_logListBox('--- BLOQUEADA ---')
+        self.foreground_logListBox("SeaGreen1")
 
     def ButtonClose(self):
         ResponseButtonClose = self.API_AuxButtonClose()
@@ -200,7 +205,6 @@ class NewWindow(Toplevel):
         print(f"Headers Content Type: {response.headers['content-type']}")
         print(f'Yeison Final::{response.json()}')
 
-    def Write_logListBox(self,texto, colorista):
 
 
 
