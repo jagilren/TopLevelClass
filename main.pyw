@@ -55,7 +55,7 @@ class NewWindow(Toplevel):
                                     state='ENABLED')  # height=2, width=3
             self.btnCerrar.grid(row=2, column=1, sticky=NS, pady=20)
 
-        self.btnLock = Button(self, text='Bloquear ', command=self.ButtonClose)  # height=2, width=3
+        self.btnLock = Button(self, text='Bloquear ', command=self.BlockProcess)  # height=2, width=3
         self.btnLock.grid(row=6, column=0, sticky=NS, pady=20)  # ,
 
         self.btnUnLock = Button(self, text='Des-Bloquear', command=self.UnBlockProcess)  # height=2, width=3
@@ -90,13 +90,17 @@ class NewWindow(Toplevel):
     def UnBlockProcess(self):
         self.threadUnBlock.daemon=True
         self.threadUnBlock.start()
+        self.Write_logListBox('--- DES-BLOQUEADA ---')
+        self.foreground_logListBox("goldenrod1")
         threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
         threadLabelWaiting.start()
         self.destroy()
 
     def BlockProcess(self):
-        self.threadUnBlock.daemon=True
-        self.threadUnBlock.start()
+        self.threadBlock.daemon=True
+        self.threadBlock.start()
+        self.Write_logListBox('--- BLOQUEADA ---')
+        self.foreground_logListBox("SeaGreen1")
         threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
         threadLabelWaiting.start()
         self.destroy()
