@@ -1,4 +1,5 @@
 /build/
 /build_borrar/
-/dist/
-/dist_borrar/
+/dist/ignoredfile.txt
+ignorefile.txt
+
