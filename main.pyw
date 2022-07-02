@@ -442,3 +442,4 @@ threadCheckConectivity.start()
 CheckAllFilesExist()
 master.mainloop()
 #Line Footer01
+#Linde01 from Github
