@@ -441,3 +441,4 @@ threadCheckConectivity.start()
 
 CheckAllFilesExist()
 master.mainloop()
+#Line Footer01
