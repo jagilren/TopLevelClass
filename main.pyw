@@ -74,7 +74,7 @@ class NewWindow(Toplevel):
 
     def foreground_logListBox(self,colorista):
         ct = datetime.datetime.now()
-        logListBox.configure(background="skyblue4", foreground=colorista, font=('Aerial 13'))
+        logListBox.itemconfigure(0,background="skyblue4", foreground=colorista)
 
 
     def AssignProcess(self):
@@ -146,15 +146,27 @@ class NewWindow(Toplevel):
                 print("Puerta Ya está Abierta.  No se ejecuta la acción")
         else: #Si es Moto o Peaton
             self.API_door()  # Abre de una si es moto o peaton sin importar estado de la puerta
-            print(f'Wait...07 seconds for AuxNormalOpen Execution')
-            time.sleep(7)
-            self.API_door()  # Abre de una si es moto Repite ejecución para Cantoneras desobedientes
-        time.sleep(5)
-        print(f'Wait...05 seconds for AuxNormalOpen Execution')
+            print(f'Wait...02 seconds for AuxNormalOpen Execution')
+            time.sleep(2)
+            #self.API_door()  # Repite pulso apertura  para Cantoneras desobedientes
+        time.sleep(2)
+        print(f'Wait...02 seconds for AuxNormalOpen Execution')
         self.API_AuxButtonNormalOpen()
         self.Write_logListBox('--- DESBLOQUEADA ---')
         self.foreground_logListBox("goldenrod1")
         time.sleep(2)
+        if Dict_Door_Type[self.boton.cget('text')] == 'SEDAN':
+            if API_Door_Status(self.IDDoor) == '2':
+                self.Write_logListBox('--- ABRIÓ PUERTA ---')
+                self.foreground_logListBox("goldenrod1")
+            else: #Si no cambió el estado del Sensor
+                self.Write_logListBox('--- PUERTA PERMANECIO CERRADA ---')
+                self.foreground_logListBox("pink")
+        else: #Si es Moto o Peaton
+            self.Write_logListBox('--- ABRIÓ PUERTA ---')
+            self.foreground_logListBox("goldenrod1")
+
+
         labelQueryResult.config(text="Esperando...", background='black')
         for element in range(int(Dict_Ini_Params['TimeOutButtonNormalOpen'])):
             time.sleep(1)
