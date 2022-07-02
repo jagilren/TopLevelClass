@@ -338,7 +338,7 @@ my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
               'Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
 BioSecurityStatus=False
 master = Tk()
-master.geometry("1140x640")
+master.geometry("1140x900")
 f = Frame(master)
 f_foot = Frame(master)
 
@@ -354,16 +354,13 @@ labelTitleQuery.grid(row=62, column=0, sticky=W, pady=2)
 
 hab_var = StringVar()
 f_foot = Frame(master)
-f_foot.grid(row=70, column=0, columnspan=20, rowspan=2, sticky=W)
+f_foot.grid(row=70, column=0, columnspan=20, sticky=NSEW)
 
 f_query = Frame(f_foot)
 f_query.grid(columns=20, row=0, sticky=W)
-# f_log.grid(column=0, row=0, columnspan=1, rowspan=1)
-# f_separator=Frame(f_foot)
-# f_separator.grid(column=5, row=0, columnspan=1,rowspan=1)
 
 global logListBox
-logListBox = Listbox(f_foot, width=180)
+logListBox = Listbox(f_foot, width=120,height=20)
 logListBox.grid(column=0, rowspan=2, columnspan=20)
 logListBox.configure(background="skyblue4", foreground="white", font=('Aerial 13'))
 # label_Separator=Label(f_foot,text="HO")
