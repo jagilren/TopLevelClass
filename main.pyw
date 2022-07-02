@@ -338,7 +338,8 @@ my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
               'Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
 BioSecurityStatus=False
 master = Tk()
-master.geometry("1140x900")
+master.geometry("1140x900+0+0") # se pone x x in lowercase para significar pixeles.  Y los ceros para desplazar 0 Unidades desde el left top corner
+
 f = Frame(master)
 f_foot = Frame(master)
 
