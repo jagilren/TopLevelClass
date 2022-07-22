@@ -148,6 +148,8 @@ class NewWindow(Toplevel):
                 self.API_door()  # Abre si está cerrada para SEDAN
             else:
                 print("Puerta Ya está Abierta.  No se ejecuta la acción")
+                self.Write_logListBox('--- PUERTA YA ESTÁ ABIERTA ---')
+                self.foreground_logListBox("orchid1")
         else: #Si es Moto o Peaton
             self.API_door()  # Abre de una si es moto o peaton sin importar estado de la puerta
             print(f'Wait...02 seconds for AuxNormalOpen Execution')
