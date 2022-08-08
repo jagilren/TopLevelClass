@@ -37,6 +37,7 @@ class NewWindow(Toplevel):
         self.columnconfigure(1, weight=1)
         self.DoorStatus = '1'
         self.threadAssign = Thread(target=self.DoorOpen_ButtonOpen_ButtonClose, name='threadAssign')
+        self.threadCloseGarage = Thread(target=self.GarageStatus_GarageClose, name='threadCloseGarage')
         self.threadUnBlock = Thread(target=self.ButtonOpen_ButtonClose, name='threadUnBlock')
         self.threadBlock = Thread(target=self.ButtonClose, name='threadBlock')
 
@@ -50,8 +51,8 @@ class NewWindow(Toplevel):
         print("Width", windowWidth, "Height", windowHeight)
         self.btnAbrir = Button(self, text='Abrir', command=self.AssignProcess)  # height=2, width=3
         self.btnAbrir.grid(row=2, column=0, sticky=NS, pady=20)  # ,
-        if DoorType == 'HATCHBACK':
-            self.btnCerrar = Button(self, text='Cerrar', command=self.CloseDoorProcess,
+        if DoorType == 'SEDAN':
+            self.btnCerrar = Button(self, text='Cerrar', command=self.CloseGarageProcess,
                                     state='ENABLED')  # height=2, width=3
             self.btnCerrar.grid(row=2, column=1, sticky=NS, pady=20)
 
@@ -82,10 +83,13 @@ class NewWindow(Toplevel):
         self.threadAssign.start()
         self.destroy()
 
-    def CloseDoorProcess(self):
-        classthreadCloseDoor = MTThread(name='Labeling', target=self.VerifyStatusDoor_CloseDoor)
-        classthreadCloseDoor.start()
+    def CloseGarageProcess(self):
+        self.threadCloseGarage.daemon=True
+        self.threadCloseGarage.start()
         self.destroy()
+        #classthreadCloseDoor = MTThread(name='Labeling', target=self.VerifyStatusDoor_CloseDoor)
+        #classthreadCloseDoor
+        #classthreadCloseDoor.start()
 
     def UnBlockProcess(self):
         self.threadUnBlock.daemon=True
@@ -140,11 +144,22 @@ class NewWindow(Toplevel):
         # threadButtonClose = MTThread(name='ClosingButton', target=self.API_AuxButtonClose)
         # threadButtonClose.start()
 
+    def GarageStatus_GarageClose(self):
+        if API_Door_Status(self.IDDoor) == '2':
+            print(f'Puerta Abierta....Cerrando Puerta')
+            self.API_door()  # Cierra la puerta  para SEDAN si está abierta. Con comando de Abrir por caprichos de ZKT
+            self.Write_logListBox('--- CERRANDO GARAJE ---')
+            self.foreground_logListBox("SeaGreen1")
+        else:
+            print("Puerta Ya está Cerrada.  No se ejecuta la acción")
+            self.Write_logListBox('--- GARAJE YA ESTÁ CERRADO ---')
+            self.foreground_logListBox("orchid1")
+
     def DoorOpen_ButtonOpen_ButtonClose(self):
         # Vamos a Revisar si la puerta está Abierta
         if Dict_Door_Type[self.boton.cget('text')] == 'SEDAN':
             if API_Door_Status(self.IDDoor) == '1':
-                print(f'Abriendo Puerta')
+                print(f'Puerta Cerrada....Abriendo Puerta')
                 self.API_door()  # Abre si está cerrada para SEDAN
             else:
                 print("Puerta Ya está Abierta.  No se ejecuta la acción")
@@ -224,8 +239,6 @@ class NewWindow(Toplevel):
         print(f'Yeison Final::{response.json()}')
 
 
-
-
 def validate_entry(text, new_text):
     try:
         if not (new_text):
@@ -236,7 +249,7 @@ def validate_entry(text, new_text):
             return FALSE
         return text.isdecimal()
     except:
-        hab_entry.config(text="")
+        hab_ENTRY.config(text="")
         return FALSE
 
     finally:
@@ -277,11 +290,14 @@ def submitQuery(labelQueryResult,BioSecurityStatus):
     prefixHab = 'HAB0' + hab_var.get() if len(hab_var.get()) == 1 else 'HAB' + hab_var.get()
     IDAuxOut = Dict_AuxOut_ID[prefixHab]
     IDDoor = Dict_Door_ID[prefixHab]
-    print(labelQueryResult.cget('text'))
+    typeDoor=Dict_Door_Type[prefixHab]
+    Dict_DoorType_Sinonyms={'MOTO':'PUERTA','SEDAN':'GARAJE'}
+    messagePrefix=Dict_DoorType_Sinonyms[typeDoor]
+
     if (API_Door_Status(IDDoor) == '1'):
-        labelQueryResult.config(text=prefixHab + " Puerta está Cerrada", background="green")
+            labelQueryResult.config(text=prefixHab + " " + messagePrefix + " está Cerrada(o)", background="green")
     elif (API_Door_Status(IDDoor) == '2'):
-        labelQueryResult.config(text=prefixHab + " Puerta está Abierta", background="red")
+        labelQueryResult.config(text=prefixHab + " " + messagePrefix + " está Abierta(o)", background="red")
     elif (API_Door_Status(IDDoor) not in ['1', '2']):
         labelQueryResult.config(text=prefixHab + " Estado del Sensor Desconocido", background="purple")
     threadLabelWaiting.start()
@@ -369,9 +385,9 @@ logListBox.configure(background="skyblue4", foreground="white", font=('Aerial 13
 # label_Separator=Label(f_foot,text="HO")
 # label_Separator.grid(row=0,column=3,columnspan=1,rowspan=5)
 
-hab_entry = Entry(f_query, textvariable=hab_var, font=('calibre', 11, 'bold'), width=5, validate="key",
+hab_ENTRY = Entry(f_query, textvariable=hab_var, font=('calibre', 11, 'bold'), width=5, validate="key",
                   validatecommand=(master.register(validate_entry), "%S", "%P"))
-hab_entry.grid(row=0, column=4, sticky=W)
+hab_ENTRY.grid(row=0, column=4, sticky=W)
 btnQuery = Button(f_query, text="CONSULTAR", padding=1, command=NONE, width=15)
 btnQuery.grid(row=1, column=4, pady=2, sticky=W)
 btnQuery.bind("<Button>", lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var.get(): submitQuery(labelQueryResult,BioSecurityStatus))
