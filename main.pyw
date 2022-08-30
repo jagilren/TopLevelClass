@@ -1,6 +1,7 @@
 # This will import all the widgets
 # and modules which are available in
 # tkinter and ttk module
+from sys import exit
 import requests
 import csv
 from tkinter import *
@@ -16,15 +17,19 @@ from subprocess import *
 import subprocess
 
 
-class MessageBox(Toplevel):
+class DelayRouteOpenGaraje(Toplevel):
     def __init__(self):
         super().__init__(master=master)
         self.btnOK = Button(self, text='OK ', command=self.destroy())  # height=2, width=3
         self.btnOK.pack()
-
+        self.lblAViso = Label(self, text='PUERTA EN RECORRIDO DE APERTURA \n ESPERA UNOS SEGUNDOS MÁS')
+        self.lblAViso.pack()
+        global boolGarageInRouteOpen
+        self.threadDelayRouteOpen = Thread(target=self.DelayRouteOpen(), name='threadDelayRouteOpen')
 
 class NewWindow(Toplevel):
     def __init__(self, master=None, boton=None, IDDoor=None, IDAuxOut=None, DoorType=None, my_headers=None):
+        global boolGarageInRouteOpen
         super().__init__(master=master)
         self.title(boton.cget('text'))
         self.my_headers = my_headers
@@ -40,6 +45,9 @@ class NewWindow(Toplevel):
         self.threadCloseGarage = Thread(target=self.GarageStatus_GarageClose, name='threadCloseGarage')
         self.threadUnBlock = Thread(target=self.ButtonOpen_ButtonClose, name='threadUnBlock')
         self.threadBlock = Thread(target=self.ButtonClose, name='threadBlock')
+        self.threadDelayRouteOpen = Thread(target=DelayRouteOpenOrClose, args=(self.boton,), name='threadDelayRouteOpen')
+        print(f'Estado de Recorrido de la puerta {boton} = {not(boolGarageInRouteOpen)}')
+
 
         # Gets the requested values of the height and widht.
         windowWidth = self.winfo_reqwidth() * 2
@@ -69,30 +77,33 @@ class NewWindow(Toplevel):
         self.focus()
         self.grab_set()
 
-    def Write_logListBox(self,texto):
+    def Write_logListBox(self, texto):
         ct = datetime.datetime.now()
         logListBox.insert(0, self.boton.cget('text') + texto + ' ' + str(ct).split('.')[0])
 
-    def foreground_logListBox(self,colorista):
+    def foreground_logListBox(self, colorista):
         ct = datetime.datetime.now()
-        logListBox.itemconfigure(0,background="skyblue4", foreground=colorista)
-
+        logListBox.itemconfigure(0, background="skyblue4", foreground=colorista)
 
     def AssignProcess(self):
-        self.threadAssign.daemon=True
+        self.threadAssign.daemon = True
         self.threadAssign.start()
+        time.sleep(3) # Para asegurarse que la ventana emergente PACIENCIA si se active
         self.destroy()
+        time.sleep(2) #Para que no se den Click super rápido en otro botón
+
 
     def CloseGarageProcess(self):
-        self.threadCloseGarage.daemon=True
+        self.threadCloseGarage.daemon = True
         self.threadCloseGarage.start()
+        time.sleep(3)  # Para asegurarse que la ventana emergente PACIENCIA si se active
         self.destroy()
-        #classthreadCloseDoor = MTThread(name='Labeling', target=self.VerifyStatusDoor_CloseDoor)
-        #classthreadCloseDoor
-        #classthreadCloseDoor.start()
+        # classthreadCloseDoor = MTThread(name='Labeling', target=self.VerifyStatusDoor_CloseDoor)
+        # classthreadCloseDoor
+        # classthreadCloseDoor.start()
 
     def UnBlockProcess(self):
-        self.threadUnBlock.daemon=True
+        self.threadUnBlock.daemon = True
         self.threadUnBlock.start()
         self.Write_logListBox('--- DES-BLOQUEADA ---')
         self.foreground_logListBox("goldenrod1")
@@ -101,7 +112,7 @@ class NewWindow(Toplevel):
         self.destroy()
 
     def BlockProcess(self):
-        self.threadBlock.daemon=True
+        self.threadBlock.daemon = True
         self.threadBlock.start()
         self.Write_logListBox('--- BLOQUEADA ---')
         self.foreground_logListBox("SeaGreen1")
@@ -126,9 +137,9 @@ class NewWindow(Toplevel):
         print(f'Respuesta JSON API_Close_Door: {response.json()}')
 
     def VerifyStatusDoor_CloseDoor(self):
-        if API_Door_Status(self.IDDoor) == '2': #Verificamos que está abierta
+        if API_Door_Status(self.IDDoor) == '2':  # Verificamos que está abierta
             print(f'Cerrando Puerta Sedan')
-            self.API_door()  #Enviamos Pulso de Abrir Puerta para que esta se Cierre, pues la API Door/remote_Close_ByID no cierra la puerta
+            self.API_door()  # Enviamos Pulso de Abrir Puerta para que esta se Cierre, pues la API Door/remote_Close_ByID no cierra la puerta
         else:
             print("Puerta Ya Esta Cerrada.  No se Ejecuta la acción")
 
@@ -139,17 +150,24 @@ class NewWindow(Toplevel):
 
         for element1 in range(int(Dict_Ini_Params['TimeOutButtonNormalOpen'])):
             time.sleep(1)
-            print(f'Threading Time = {element1} Waiting for AuxClose Execute threadUnBlockProcess')
+            #print(f'Threading Time = {element1} Waiting for AuxClose Execute threadUnBlockProcess')
         ResponseButtonClose = self.API_AuxButtonClose()
         # threadButtonClose = MTThread(name='ClosingButton', target=self.API_AuxButtonClose)
         # threadButtonClose.start()
+        self.destroy()
 
     def GarageStatus_GarageClose(self):
         if API_Door_Status(self.IDDoor) == '2':
             print(f'Puerta Abierta....Cerrando Puerta')
-            self.API_door()  # Cierra la puerta  para SEDAN si está abierta. Con comando de Abrir por caprichos de ZKT
-            self.Write_logListBox('--- CERRANDO GARAJE ---')
-            self.foreground_logListBox("SeaGreen1")
+            self.threadDelayRouteOpen.daemon = True
+            self.threadDelayRouteOpen.start()
+
+            try:
+                self.API_door()  # Cierra la puerta  para SEDAN si está abierta. Con comando de Abrir por caprichos de ZKT
+                self.Write_logListBox('--- CERRANDO GARAJE ---')
+                self.foreground_logListBox("SeaGreen1")
+            except:
+                print('Error en API de Cerrado de Garaje')
         else:
             print("Puerta Ya está Cerrada.  No se ejecuta la acción")
             self.Write_logListBox('--- GARAJE YA ESTÁ CERRADO ---')
@@ -158,40 +176,45 @@ class NewWindow(Toplevel):
     def DoorOpen_ButtonOpen_ButtonClose(self):
         # Vamos a Revisar si la puerta está Abierta
         if Dict_Door_Type[self.boton.cget('text')] == 'SEDAN':
-            if API_Door_Status(self.IDDoor) == '1':
-                print(f'Puerta Cerrada....Abriendo Puerta')
-                self.API_door()  # Abre si está cerrada para SEDAN
+            if API_Door_Status(self.IDDoor) == '1':  #1 SIGNIGFICA CERRADA
+                print(f'Puerta en recorrido de Apertura')
+                try:
+                    self.threadDelayRouteOpen.daemon = True
+                    self.threadDelayRouteOpen.start()
+                    self.API_door()  # Abre si está cerrada para SEDAN
+                except:
+                    print('Error en API_Door, Revise API desde la Plataforma ZKT')
+
             else:
                 print("Puerta Ya está Abierta.  No se ejecuta la acción")
                 self.Write_logListBox('--- PUERTA YA ESTÁ ABIERTA ---')
                 self.foreground_logListBox("orchid1")
-        else: #Si es Moto o Peaton
+        else:  # Si es Moto o Peaton
             self.API_door()  # Abre de una si es moto o peaton sin importar estado de la puerta
             print(f'Wait...02 seconds for AuxNormalOpen Execution')
             time.sleep(2)
-            #self.API_door()  # Repite pulso apertura  para Cantoneras desobedientes
+            # self.API_door()  # Repite pulso apertura  para Cantoneras desobedientes
         time.sleep(2)
         print(f'Wait...02 seconds for AuxNormalOpen Execution')
         self.API_AuxButtonNormalOpen()
-        self.Write_logListBox('--- DESBLOQUEADA ---')
+        self.Write_logListBox(f'--- {self.boton.cget("text")} DESBLOQUEADA ---')
         self.foreground_logListBox("goldenrod1")
         time.sleep(2)
         if Dict_Door_Type[self.boton.cget('text')] == 'SEDAN':
             if API_Door_Status(self.IDDoor) == '2':
-                self.Write_logListBox('--- ABRIÓ PUERTA ---')
+                self.Write_logListBox(f'--- GARAJE {self.boton.cget("text")}  ESTÁ ABIERTO  ---')
                 self.foreground_logListBox("goldenrod1")
-            else: #Si no cambió el estado del Sensor
+            else:  # Si no cambió el estado del Sensor
                 self.Write_logListBox('--- PUERTA PERMANECIO CERRADA ---')
                 self.foreground_logListBox("pink")
-        else: #Si es Moto o Peaton
+        else:  # Si es Moto o Peaton
             self.Write_logListBox('--- ABRIÓ PUERTA ---')
             self.foreground_logListBox("goldenrod1")
-
 
         labelQueryResult.config(text="Esperando...", background='black')
         for element in range(int(Dict_Ini_Params['TimeOutButtonNormalOpen'])):
             time.sleep(1)
-            print(f'Threading Time = {element} AuxClose Next to Execute threadAssignProcess')
+            #print(f'Threading Time = {element} AuxClose Next to Execute threadAssignProcess')
         self.API_AuxButtonClose()
         self.Write_logListBox('--- BLOQUEADA ---')
         self.foreground_logListBox("SeaGreen1")
@@ -238,6 +261,18 @@ class NewWindow(Toplevel):
         print(f"Headers Content Type: {response.headers['content-type']}")
         print(f'Yeison Final::{response.json()}')
 
+def DelayRouteOpenOrClose(btn):
+    boolGarageInRouteOpen = True
+    btn.bind("<Button>",
+             lambda e: messagebox.showinfo("Paciencia","Puerta en recorrido 'PACIENCIA'"))
+    print (f'Cambió Bind para <Button> {btn.cget("text")}')
+    print (f'Thead Delay Route Open Garage Iniciado durante {int(Dict_Ini_Params["DelayRouteOpenGaraje_Secs"])}')
+    time.sleep(int(Dict_Ini_Params["DelayRouteOpenGaraje_Secs"])) # Demora de la Apertura Total del Garage
+    boolGarageInRouteOpen = False
+    btn.bind("<Button>",
+             lambda e, boton=btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')],
+                    DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, IDDoor, IDAuxOut, DoorType,
+                                                                         my_headers))
 
 def validate_entry(text, new_text):
     try:
@@ -255,19 +290,18 @@ def validate_entry(text, new_text):
     finally:
         print(f'Entraste al finally')
 
-
 def LabelWaiting():
     for tiempo in range(5):
         time.sleep(1)
         print("Waiting for Change Text Label")
     labelQueryResult.config(text="Esperando...", background='black')
 
-
 class MTThread(Thread):
     def __init__(self, name=None, target=None):
         self.mt_name = name
         self.mt_target = target
         Thread.__init__(self, name=name, target=target)
+        print("name en def __init__", name)
 
     def start(self):
         super().start()
@@ -279,29 +313,26 @@ class MTThread(Thread):
 
 
 threadLabelWaiting = MTThread(name='Labeling', target=LabelWaiting)
-
-
-def submitQuery(labelQueryResult,BioSecurityStatus):
+def submitQuery(labelQueryResult, BioSecurityStatus):
     if not (hab_var.get()):
         return
-    if BioSecurityStatus==False:
-        infoconexion=messagebox.showinfo("Error de Conexión", "Servidor de Puertas Desconectado \n Verifique RED")
+    if BioSecurityStatus == False:
+        infoconexion = messagebox.showinfo("Error de Conexión", "Servidor de Puertas Desconectado \n Verifique RED")
         return
     prefixHab = 'HAB0' + hab_var.get() if len(hab_var.get()) == 1 else 'HAB' + hab_var.get()
     IDAuxOut = Dict_AuxOut_ID[prefixHab]
     IDDoor = Dict_Door_ID[prefixHab]
-    typeDoor=Dict_Door_Type[prefixHab]
-    Dict_DoorType_Sinonyms={'MOTO':'PUERTA','SEDAN':'GARAJE'}
-    messagePrefix=Dict_DoorType_Sinonyms[typeDoor]
+    typeDoor = Dict_Door_Type[prefixHab]
+    Dict_DoorType_Sinonyms = {'MOTO': 'PUERTA', 'SEDAN': 'GARAJE'}
+    messagePrefix = Dict_DoorType_Sinonyms[typeDoor]
 
     if (API_Door_Status(IDDoor) == '1'):
-            labelQueryResult.config(text=prefixHab + " " + messagePrefix + " está Cerrada(o)", background="green")
+        labelQueryResult.config(text=prefixHab + " " + messagePrefix + " está Cerrada(o)", background="green")
     elif (API_Door_Status(IDDoor) == '2'):
         labelQueryResult.config(text=prefixHab + " " + messagePrefix + " está Abierta(o)", background="red")
     elif (API_Door_Status(IDDoor) not in ['1', '2']):
         labelQueryResult.config(text=prefixHab + " Estado del Sensor Desconocido", background="purple")
     threadLabelWaiting.start()
-
 
 def API_Door_Status(IDDoor):
     print(f'Api Status Ejecutado, {IDDoor}')
@@ -314,15 +345,12 @@ def API_Door_Status(IDDoor):
         print(f'Estado Sensor Puerta= {DoorStatus}')
         return DoorStatus
     except:
-        retur = "Puerta Inexistente"
-
+        return "Puerta Inexistente"
 
 # Specify path
-
 def VerificaTXT(filetxt):
     isExist = os.path.exists(filetxt)
     return isExist
-
 
 def CheckAllFilesExist(queryexist=True):
     list_configFiles = ['./AuxOut.txt', './doors.txt', './RAM4GB.png']
@@ -345,7 +373,8 @@ def leer_csv(filename):
             rows[row[0]] = row[1]
     return rows
 
-
+boolGarageInRouteOpen = False
+intCountWarningConnectivy=0
 Dict_Door_ID = leer_csv('doors.txt')
 Dict_AuxOut_ID = leer_csv('AuxOut.txt')
 Dict_Door_Type = leer_csv('doors_type.txt')
@@ -354,9 +383,10 @@ Dict_Ini_Params = leer_csv('zkt.ini')
 global my_headers
 my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
               'Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
-BioSecurityStatus=False
+BioSecurityStatus = False
 master = Tk()
-master.geometry("1140x900+0+0") # se pone x x in lowercase para significar pixeles.  Y los ceros para desplazar 0 Unidades desde el left top corner
+master.geometry(
+    "1140x900+0+0")  # se pone x x in lowercase para significar pixeles.  Y los ceros para desplazar 0 Unidades desde el left top corner
 
 f = Frame(master)
 f_foot = Frame(master)
@@ -379,7 +409,7 @@ f_query = Frame(f_foot)
 f_query.grid(columns=20, row=0, sticky=W)
 
 global logListBox
-logListBox = Listbox(f_foot, width=120,height=20)
+logListBox = Listbox(f_foot, width=120, height=20)
 logListBox.grid(column=0, rowspan=2, columnspan=20)
 logListBox.configure(background="skyblue4", foreground="white", font=('Aerial 13'))
 # label_Separator=Label(f_foot,text="HO")
@@ -390,8 +420,10 @@ hab_ENTRY = Entry(f_query, textvariable=hab_var, font=('calibre', 11, 'bold'), w
 hab_ENTRY.grid(row=0, column=4, sticky=W)
 btnQuery = Button(f_query, text="CONSULTAR", padding=1, command=NONE, width=15)
 btnQuery.grid(row=1, column=4, pady=2, sticky=W)
-btnQuery.bind("<Button>", lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var.get(): submitQuery(labelQueryResult,BioSecurityStatus))
-btnQuery.bind('<Return>', lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var.get(): submitQuery(labelQueryResult,BioSecurityStatus))
+btnQuery.bind("<Button>",
+              lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var.get(): submitQuery(labelQueryResult, BioSecurityStatus))
+btnQuery.bind('<Return>',
+              lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var.get(): submitQuery(labelQueryResult, BioSecurityStatus))
 f = Frame(master, style="Custom.TFrame")
 f.grid(row=0, column=0)
 labelQueryResult = Label(f_query, text="Esperando...:", font=('calibre', 11, 'bold'), foreground='white',
@@ -402,7 +434,7 @@ radek_line = 2  # Set  ROW  of  matríz of Buttons
 bunka_column = 0
 for element in Dict_Door_ID.keys():
     state = DISABLED
-    if element == 'HAB49' or element == 'HAB50' or element == 'HAB51' or element == 'HAB52':
+    if element == 'HAB22' or element == 'HAB23' or element ==  'HAB49' or element == 'HAB50' or element == 'HAB51' or element == 'HAB52':
         state = NORMAL
         btn = Button(f, text=element, padding=10, state=state)
         btn.bind("<Button>",
@@ -410,7 +442,7 @@ for element in Dict_Door_ID.keys():
                         DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, IDDoor, IDAuxOut, DoorType,
                                                                              my_headers))
     else:
-        btn = Button(f, text=element, padding=10, state=state)
+        btn = Button(f, text='...', padding=10, state=state)
 
     btn.grid(row=radek_line, column=bunka_column, padx=2, pady=2, sticky=W)
 
@@ -423,39 +455,65 @@ master.config(bg='#68839B')
 p1 = PhotoImage(file='RAM4GB.png')
 p1 = master.iconphoto(True, p1)
 
+
 def checkPing():
     global BioSecurityStatus
-    my_address =Dict_Ini_Params['IPV4AddressServer'].split(':')[0]
+    my_address = Dict_Ini_Params['IPV4AddressServer'].split(':')[0]
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     output = Popen(["ping", "-n", "2", my_address], startupinfo=startupinfo, stdout=PIPE).communicate()[0]
-    if output.find(b'tiempo') >0:
-         BioSecurityStatus=True
+    if output.find(b'tiempo') > 0:
+        BioSecurityStatus = True
     elif output.find(b'tiempo') == -1:
         BioSecurityStatus = False
     print(f'BioSecurityStatus={BioSecurityStatus}')
-    return output.find(b'tiempo') # If return -1, then Host inaccesible
+    return output.find(b'tiempo')  # If return -1, then Host inaccessible
+
 def WarningConectivity():
     while True:
+        global intCountWarningConnectivy
         if logListBox.size() > 16:
             logListBox.delete(0, END)
-        y=checkPing()
-        if y==-1:
+        y = checkPing()
+        if y == -1:
             print('Servidor de Apertura de Puertas Caido o Fuera de Línea')
             ct = datetime.datetime.now()
             logListBox.configure(background="LightBlue1", foreground="red", font=('Aerial 13'))
-            logListBox.insert(0, "Servidor de Apertura de Puertas Caido o Fuera de Línea" + ' --- ' + str(ct).split('.')[0])
-        elif y>=0:
+            logListBox.insert(0,
+                              "Servidor de Apertura de Puertas Caido o Fuera de Línea" + ' --- ' + str(ct).split('.')[
+                                  0])
+            time.sleep(3)
+            messagebox.showerror("Error de Conectividad",
+                                 "Error de Conexion con el Server BioTime \nReinicie el Computador \nSi el problema Continúa Comuníquese con Soporte Técnico")
+            time.sleep(1)
+            master.destroy()
+            exit()
+
+        elif y >= 0:
             print('Servidor de Aperturas de Puertas Online')
             ct = datetime.datetime.now()
-            logListBox.configure(background="skyblue4", foreground="white", font=('Aerial 13'))
-            logListBox.insert(0,"Servidor de Apertura está Conectado   en línea" + ' --- ' + str(ct).split('.')[0])
-        time.sleep(600)
+            if (intCountWarningConnectivy== 0 or intCountWarningConnectivy> 20):
+                logListBox.configure(background="skyblue4", foreground="white", font=('Aerial 13'))
+                logListBox.insert(0, "Servidor de Apertura está Conectado   en línea" + ' --- ' + str(ct).split('.')[0])
+                intCountWarningConnectivy=0
+        intCountWarningConnectivy = +1
+        time.sleep(int(Dict_Ini_Params['WatchDog_Server_Secs']))
+
+
+#  Rutina para Determinar si hay conexion con el Servidor de BioTime
+if  (checkPing() == -1):
+    messagebox.showerror("Error de Conectividad", "Error de Conexion con el Servidor \nReinicie el Computador \nSi el problema Continúa llame a Soporte Técnico")
+    #time.sleep(1)
+    #  Alternative para Modal Window
+    #  master.after(5000, lambda: _show('Title', 'Prompting after 5 seconds'))
+    master.destroy()
+    exit()
+
 threadCheckConectivity = MTThread(name='Conectivity', target=WarningConectivity)
-threadCheckConectivity.daemon =True
+threadCheckConectivity.daemon = True
 threadCheckConectivity.start()
 
 CheckAllFilesExist()
 master.mainloop()
-#Line Footer01
-#Linde01 from Github
+# Line Footer01
+# Linde01 from Github
