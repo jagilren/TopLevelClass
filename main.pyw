@@ -434,7 +434,8 @@ radek_line = 2  # Set  ROW  of  matríz of Buttons
 bunka_column = 0
 for element in Dict_Door_ID.keys():
     state = DISABLED
-    if element == 'HAB14' or element == 'HAB15' or element == 'HAB18' or element == 'HAB19' or element == 'HAB22' or element == 'HAB23' or element ==  'HAB49' or element == 'HAB50' or element == 'HAB51' or element == 'HAB52':
+    #if element == 'HAB14' or element == 'HAB15' or element == 'HAB18' or element == 'HAB19' or element == 'HAB22' or element == 'HAB23' or element ==  'HAB49' or element == 'HAB50' or element == 'HAB51' or element == 'HAB52':
+    if len(Dict_Door_ID[element]) == 32:
         state = NORMAL
         btn = Button(f, text=element, padding=10, state=state)
         btn.bind("<Button>",
