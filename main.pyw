@@ -28,13 +28,14 @@ class DelayRouteOpenGaraje(Toplevel):
         self.threadDelayRouteOpen = Thread(target=self.DelayRouteOpen(), name='threadDelayRouteOpen')
 
 class NewWindow(Toplevel):
-    def __init__(self, master=None, boton=None, IDDoor=None, IDAuxOut=None, DoorType=None, my_headers=None):
+    def __init__(self, master=None, boton=None, hab_ENTRY=None, IDDoor=None, IDAuxOut=None, DoorType=None, my_headers=None):
         global boolGarageInRouteOpen
         super().__init__(master=master)
         self.title(boton.cget('text'))
         self.my_headers = my_headers
         self.geometry("400x200")
         self.boton = boton
+        self.hab_ENTRY=hab_ENTRY
         self.IDDoor = IDDoor
         self.IDAuxOut = IDAuxOut
         self.DoorType = DoorType
@@ -47,7 +48,9 @@ class NewWindow(Toplevel):
         self.threadBlock = Thread(target=self.ButtonClose, name='threadBlock')
         self.threadDelayRouteOpen = Thread(target=DelayRouteOpenOrClose, args=(self.boton,), name='threadDelayRouteOpen')
         print(f'Estado de Recorrido de la puerta {boton} = {not(boolGarageInRouteOpen)}')
-
+        #self.hab_ENTRY.config(text=self.boton.cget('text')[3:5])
+        self.hab_ENTRY.delete(0, END)
+        self.hab_ENTRY.insert(0,self.boton.cget('text')[3:5])
 
         # Gets the requested values of the height and widht.
         windowWidth = self.winfo_reqwidth() * 2
@@ -434,13 +437,13 @@ radek_line = 2  # Set  ROW  of  matríz of Buttons
 bunka_column = 0
 for element in Dict_Door_ID.keys():
     state = DISABLED
-    '''if element == 'HAB14' or element == 'HAB15' or element == 'HAB18' or element == 'HAB19' or element == 'HAB22' or element == 'HAB23' or element ==  'HAB49' or element == 'HAB50' or element == 'HAB51' or element == 'HAB52':'''
+
     if len(Dict_Door_ID[element]) == 32:
         state = NORMAL
         btn = Button(f, text=element, padding=10, state=state)
         btn.bind("<Button>",
                  lambda e, boton=btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')],
-                        DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, IDDoor, IDAuxOut, DoorType,
+                        DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, hab_ENTRY, IDDoor, IDAuxOut, DoorType,
                                                                              my_headers))
     else:
         btn = Button(f, text='...', padding=10, state=state)
