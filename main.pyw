@@ -28,7 +28,7 @@ class DelayRouteOpenGaraje(Toplevel):
         global boolGarageInRouteOpen
         self.threadDelayRouteOpen = Thread(target=self.DelayRouteOpen(), name='threadDelayRouteOpen')
 
-class WindowOPenDoors(Toplevel):
+class WindowOPenendDoors(Toplevel):
     def __init__(self):
         print('Clase Creada')
         pass
@@ -56,6 +56,12 @@ class NewWindow(Toplevel):
         #Cambia el Texto de la EntryBox de Habitación para consulta de estado Rápido luego de salir de la Ventana
         self.hab_ENTRY.delete(0, END)
         self.hab_ENTRY.insert(0,self.boton.cget('text')[3:5])
+        self.bind('<Escape>', lambda e: close_win(e))
+        self.grab_set()
+        self.focus()
+
+        def close_win(e):
+            self.destroy()
 
         # Gets the requested values of the height and widht.
         windowWidth = self.winfo_reqwidth() * 2
@@ -82,9 +88,8 @@ class NewWindow(Toplevel):
         labelStatusDoor.grid(row=7, column=0, pady=20, columnspan=2, rowspan=2, sticky=NSEW)
         labelStatusDoor.config(text="Open_Door")
         print(self.btnUnLock.grid_info())
-        self.focus()
         self.grab_set()
-
+        self.focus()
     def Write_logListBox(self, texto):
         ct = datetime.datetime.now()
         logListBox.insert(0, self.boton.cget('text') + texto + ' ' + str(ct).split('.')[0])
@@ -282,6 +287,7 @@ def DelayRouteOpenOrClose(btn):
                     DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, IDDoor, IDAuxOut, DoorType,
                                                                          my_headers))
 
+
 def validate_entry(text, new_text):
     try:
         if not (new_text):
@@ -401,9 +407,14 @@ f_foot = Frame(master)
 
 style = Style()
 style.configure('TButton', font=('Tahoma', 10), borderwidth='4')
+#style_Garaje = {'fg': 'black', 'bg': 'SlateBlue2', 'activebackground':'SlateBlue2', 'activeforeground': 'SlateBlue2'}
+#style.configure('TButton', **style_Garaje)
 style.map('TButton', foreground=[('active', '!disabled', ('green'))], background=[('active', 'black')])
-styleButton =Style()
-styleButton.configure('small.TButton', font=(None, 8,'bold'), foreground="red")
+styleButtonGaraje =Style()
+styleButtonGaraje.configure('small.TButton', font=('Tahoma', 8, 'bold'), background="red",foreground='orange red')
+styleButtonGaraje.configure('sedan.TButton', font=('Tahoma', 10 ), background="black",foreground='blue')
+styleButtonGaraje.configure('moto.TButton', font=('Tahoma', 10), background="red",foreground='orange red')
+
 
 style.configure('TFrame', bordercolor='pink', background='#68839B', borderwidth=1)
 
@@ -461,11 +472,19 @@ for element in Dict_Door_ID.keys():
 
     if len(Dict_Door_ID[element]) == 32:
         state = NORMAL
-        btn = Button(frame_buttons, text=element, padding=10, state=state)
-        btn.bind("<Button>",
-                 lambda e, boton=btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')],
-                        DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, hab_ENTRY, IDDoor, IDAuxOut, DoorType,
-                                                                             my_headers))
+
+        if (Dict_Door_Type[element]=='SEDAN'):
+            btn = Button(frame_buttons, text=element, padding=10, state=state, style="sedan.TButton")
+            btn.bind("<Button>",
+                     lambda e, boton=btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')],
+                            DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, hab_ENTRY, IDDoor, IDAuxOut, DoorType,
+                             my_headers))
+        elif (Dict_Door_Type[element]=='MOTO' or Dict_Door_Type[element]=='HIBRIDO'):
+            btn = Button(frame_buttons, text=element, padding=10, state=state, style="moto.TButton")
+            btn.bind("<Button>",
+                     lambda e, boton=btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')],
+                            DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, hab_ENTRY, IDDoor, IDAuxOut, DoorType,
+                             my_headers))
     else:
         btn = Button(frame_buttons, text='...', padding=10, state=state)
 
@@ -534,7 +553,7 @@ if  (checkPing() == -1):
     master.destroy()
     exit()
 
-WindowOpenDoor=WindowOPenDoors()
+WindowOpenDoor=WindowOPenendDoors()
 
 threadCheckConectivity = MTThread(name='Conectivity', target=WarningConectivity)
 threadCheckConectivity.daemon = True
