@@ -36,6 +36,8 @@ class NewWindow(Toplevel):
     def __init__(self, master=None, boton=None, hab_ENTRY=None, IDDoor=None, IDAuxOut=None, DoorType=None, my_headers=None):
         global boolGarageInRouteOpen
         super().__init__(master=master)
+        self.grab_set()
+        self.focus()
         self.title(boton.cget('text'))
         self.my_headers = my_headers
         self.geometry("400x200")
@@ -56,9 +58,8 @@ class NewWindow(Toplevel):
         #Cambia el Texto de la EntryBox de Habitación para consulta de estado Rápido luego de salir de la Ventana
         self.hab_ENTRY.delete(0, END)
         self.hab_ENTRY.insert(0,self.boton.cget('text')[3:5])
+
         self.bind('<Escape>', lambda e: close_win(e))
-        self.grab_set()
-        self.focus()
 
         def close_win(e):
             self.destroy()
@@ -274,6 +275,7 @@ class NewWindow(Toplevel):
         print(f"Headers Content Type: {response.headers['content-type']}")
         print(f'Yeison Final::{response.json()}')
 
+
 def DelayRouteOpenOrClose(btn):
     boolGarageInRouteOpen = True
     btn.bind("<Button>",
@@ -406,13 +408,13 @@ frame_buttons = Frame(master)
 f_foot = Frame(master)
 
 style = Style()
-style.configure('TButton', font=('Tahoma', 10), borderwidth='4')
+style.configure('TButton', font=('Tahoma', 10), borderwidth='4',background='black',foreground='black',highlightthickness='20')
 #style_Garaje = {'fg': 'black', 'bg': 'SlateBlue2', 'activebackground':'SlateBlue2', 'activeforeground': 'SlateBlue2'}
 #style.configure('TButton', **style_Garaje)
-style.map('TButton', foreground=[('active', '!disabled', ('green'))], background=[('active', 'black')])
+style.map('TButton', foreground=[('active','!disabled', ('magenta'))], background=[('active', 'black')])
 styleButtonGaraje =Style()
 styleButtonGaraje.configure('small.TButton', font=('Tahoma', 8, 'bold'), background="red",foreground='orange red')
-styleButtonGaraje.configure('sedan.TButton', font=('Tahoma', 10 ), background="black",foreground='blue')
+styleButtonGaraje.configure('sedan.TButton', font=('Tahoma', 10), background="black",foreground='blue')
 styleButtonGaraje.configure('moto.TButton', font=('Tahoma', 10), background="red",foreground='orange red')
 
 
@@ -472,19 +474,17 @@ for element in Dict_Door_ID.keys():
 
     if len(Dict_Door_ID[element]) == 32:
         state = NORMAL
-
         if (Dict_Door_Type[element]=='SEDAN'):
-            btn = Button(frame_buttons, text=element, padding=10, state=state, style="sedan.TButton")
-            btn.bind("<Button>",
-                     lambda e, boton=btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')],
-                            DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, hab_ENTRY, IDDoor, IDAuxOut, DoorType,
-                             my_headers))
+            btn = Button(frame_buttons, text=element, padding=10, state=state, style="TButton")
+
         elif (Dict_Door_Type[element]=='MOTO' or Dict_Door_Type[element]=='HIBRIDO'):
             btn = Button(frame_buttons, text=element, padding=10, state=state, style="moto.TButton")
-            btn.bind("<Button>",
-                     lambda e, boton=btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')],
-                            DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, hab_ENTRY, IDDoor, IDAuxOut, DoorType,
-                             my_headers))
+
+        btn.bind("<Button>",
+                 lambda e, boton=btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')],
+                        DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, hab_ENTRY, IDDoor, IDAuxOut,
+                                                                             DoorType,
+                                                                             my_headers))
     else:
         btn = Button(frame_buttons, text='...', padding=10, state=state)
 
