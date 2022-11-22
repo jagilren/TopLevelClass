@@ -43,6 +43,7 @@ class NewWindow(Toplevel):
         self.geometry("400x200")
         self.boton = boton
         self.hab_ENTRY=hab_ENTRY
+        self.labelHabitacion = boton.cget('text')
         self.IDDoor = IDDoor
         self.IDAuxOut = IDAuxOut
         self.DoorType = DoorType
@@ -148,7 +149,7 @@ class NewWindow(Toplevel):
                         + '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
         # print(frame_buttons'url_abrir_cerrar_puerta {endpoint_Door}')
         response = requests.post(endpoint_Door, headers=self.my_headers)
-        print(f'Respuesta JSON API_Close_Door: {response.json()}')
+        print(f'Respuesta JSON API_Close_Door: {response.json()}, {self.labelHabitacion}')
 
     def VerifyStatusDoor_CloseDoor(self):
         if API_Door_Status(self.IDDoor) == '2':  # Verificamos que está abierta
@@ -255,7 +256,7 @@ class NewWindow(Toplevel):
             'IPV4AddressServer'] + '/api/auxOut/remoteCloseByAuxOutById?id=' + self.IDAuxOut + \
                        '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
         response = requests.post(endpoint_Aux, headers=self.my_headers)
-        print(f'json response CloseAuxOut:   {response.json()}')
+        print(f'json response CloseAuxOut:   {response.json()}:,  {self.labelHabitacion} ')
         return response.json()['message']
 
     def btn_Abrir(self):
@@ -560,6 +561,7 @@ threadCheckConectivity.daemon = True
 threadCheckConectivity.start()
 
 CheckAllFilesExist()
+# master.bind('W', lambda event: hab_ENTRY.focus())
 master.mainloop()
 # Line Footer01
 # Linde01 from Github
