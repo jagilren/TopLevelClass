@@ -65,7 +65,7 @@ class NewWindow(Toplevel):
         def close_win(e):
             self.destroy()
 
-        # Gets the requested values of the height and widht.
+        # Gets the requested values of the height and width.
         windowWidth = self.winfo_reqwidth() * 2
         windowHeight = self.winfo_reqheight() * 2
         # Gets both half the screen width/height and window width/height
@@ -402,8 +402,10 @@ my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
               'Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
 BioSecurityStatus = False
 master = Tk()
-master.geometry(
-    "1140x900+0+0")  # se pone x x in lowercase para significar pixeles.  Y los ceros para desplazar 0 Unidades desde el left top corner
+screen_width = master.winfo_screenwidth()
+screen_height = master.winfo_screenheight()
+master.geometry(f'{screen_width}x{screen_height}')
+      # "1140x900+0+0") se pone x x in lowercase para significar pixeles.  Y los ceros para desplazar 0 Unidades desde el left top corner
 
 frame_buttons = Frame(master)
 f_foot = Frame(master)
@@ -468,7 +470,7 @@ labelQueryResult = Label(f_query, text="Esperando...:", font=('calibre', 11, 'bo
                          background='black')
 labelQueryResult.grid(row=3, column=0, pady=2, sticky=W)
 
-radek_line = 2  # Set  ROW  of  matríz of Buttons
+radek_line = 2  # Construye Matriz de Botones Set  ROW  of  matríz of Buttons
 bunka_column = 0
 for element in Dict_Door_ID.keys():
     state = DISABLED
@@ -488,9 +490,7 @@ for element in Dict_Door_ID.keys():
                                                                              my_headers))
     else:
         btn = Button(frame_buttons, text='...', padding=10, state=state)
-
     btn.grid(row=radek_line, column=bunka_column, padx=2, pady=2, sticky=W)
-
     bunka_column += 1
     if bunka_column == 10:  # changed this variable to make it easier to test code.
         bunka_column = 0
