@@ -16,7 +16,7 @@ from threading import Thread
 import os
 from subprocess import *
 import subprocess
-
+import ctypes
 
 class DelayRouteOpenGaraje(Toplevel):
     def __init__(self):
@@ -402,8 +402,14 @@ my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
               'Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
 BioSecurityStatus = False
 master = Tk()
-screen_width = master.winfo_screenwidth()
-screen_height = master.winfo_screenheight()
+num_displays = ctypes.windll.user32.GetSystemMetrics(80)
+num_displays=0
+widthMaxWindow = ctypes.windll.user32.GetSystemMetrics(16)
+heightMaxWindow = ctypes.windll.user32.GetSystemMetrics(17)
+screen_width = int(widthMaxWindow/num_displays)  if num_displays>0 else 1024
+screen_height = int(heightMaxWindow/num_displays) if num_displays>0 else 768
+btnRelativeRowPos=0
+btnRelativeColPos=0
 master.geometry(f'{screen_width}x{screen_height}')
       # "1140x900+0+0") se pone x x in lowercase para significar pixeles.  Y los ceros para desplazar 0 Unidades desde el left top corner
 
@@ -457,7 +463,7 @@ btnQOpenedDoors.bind("<Button>",lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var
 myFont = font.Font(family='Helvetica')
 
 global logListBox
-logListBox = Listbox(f_foot, width=120, height=20)
+logListBox = Listbox(f_foot, width=120, height=int(16))  #width is noumbre of characteres !pixels; height is lines not pixels
 logListBox.grid(column=0,row=5,rowspan=2, columnspan=20,sticky=W)
 logListBox.configure(background="skyblue4", foreground="white", font=('Aerial 13'))
 
@@ -472,6 +478,8 @@ labelQueryResult.grid(row=3, column=0, pady=2, sticky=W)
 
 radek_line = 2  # Construye Matriz de Botones Set  ROW  of  matríz of Buttons
 bunka_column = 0
+last_btn_pos_y1=0  #Establece un valor semilla para determinar la posición de la última fila de los btn
+
 for element in Dict_Door_ID.keys():
     state = DISABLED
 
@@ -490,7 +498,15 @@ for element in Dict_Door_ID.keys():
                                                                              my_headers))
     else:
         btn = Button(frame_buttons, text='...', padding=10, state=state)
-    btn.grid(row=radek_line, column=bunka_column, padx=2, pady=2, sticky=W)
+
+
+    last_btn_pos_y1 = btn.winfo_y() if btn.winfo_rooty() >= last_btn_pos_y1 else last_btn_pos_y1
+    frame_buttons.rowconfigure(radek_line, minsize=(screen_height/2/8))
+    frame_buttons.columnconfigure(bunka_column, minsize=(screen_width-110)/10)
+    btn.grid(row=radek_line, column=bunka_column, padx=2, pady=2, sticky=NSEW)
+    master.update()
+    #master.geometry(f'{screen_width+100}x{screen_height}')
+
     bunka_column += 1
     if bunka_column == 10:  # changed this variable to make it easier to test code.
         bunka_column = 0
