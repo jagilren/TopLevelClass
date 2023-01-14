@@ -19,7 +19,8 @@ import subprocess
 import ctypes
 
 class DelayRouteOpenGaraje(Toplevel):
-    def __init__(self):
+    pass
+    '''def __init__(self):
         super().__init__(master=master)
         self.btnOK = Button(self, text='OK ', command=self.destroy())  # height=2, width=3
         self.btnOK.pack()
@@ -27,6 +28,7 @@ class DelayRouteOpenGaraje(Toplevel):
         self.lblAViso.pack()
         global boolGarageInRouteOpen
         self.threadDelayRouteOpen = Thread(target=self.DelayRouteOpen(), name='threadDelayRouteOpen')
+        '''
 
 class WindowOPenendDoors(Toplevel):
     def __init__(self):
@@ -36,8 +38,6 @@ class NewWindow(Toplevel):
     def __init__(self, master=None, boton=None, hab_ENTRY=None, IDDoor=None, IDAuxOut=None, DoorType=None, my_headers=None):
         global boolGarageInRouteOpen
         super().__init__(master=master)
-        self.grab_set()
-        self.focus()
         self.title(boton.cget('text'))
         self.my_headers = my_headers
         self.geometry("400x200")
@@ -60,7 +60,6 @@ class NewWindow(Toplevel):
         self.hab_ENTRY.delete(0, END)
         self.hab_ENTRY.insert(0,self.boton.cget('text')[3:5])
 
-        self.bind('<Escape>', lambda e: close_win(e))
 
         def close_win(e):
             self.destroy()
@@ -70,11 +69,19 @@ class NewWindow(Toplevel):
         windowHeight = self.winfo_reqheight() * 2
         # Gets both half the screen width/height and window width/height
         positionRight = int(self.winfo_screenwidth() / 2 - windowWidth / 2)
-        positionDown = int(self.winfo_screenheight() / 2 - windowHeight / 2)
+        positionDown = int(self.winfo_screenheight() / 2 + windowHeight / 10)
         self.geometry("+{}+{}".format(positionRight, positionDown))
+        self.lift()
+        self.focus_force()
+        self.grab_set()
+        #self.focus_set()
+
+
         print("Width", windowWidth, "Height", windowHeight)
+
         self.btnAbrir = Button(self, text='Abrir', command=self.AssignProcess)  # height=2, width=3
         self.btnAbrir.grid(row=2, column=0, sticky=NS, pady=20)  # ,
+
         if DoorType == 'SEDAN':
             self.btnCerrar = Button(self, text='Cerrar', command=self.CloseGarageProcess,
                                     state='ENABLED')  # height=2, width=3
@@ -91,7 +98,9 @@ class NewWindow(Toplevel):
         labelStatusDoor.config(text="Open_Door")
         print(self.btnUnLock.grid_info())
         self.grab_set()
-        self.focus()
+        self.bind('<Escape>', lambda e: close_win(e))
+
+
     def Write_logListBox(self, texto):
         ct = datetime.datetime.now()
         logListBox.insert(0, self.boton.cget('text') + texto + ' ' + str(ct).split('.')[0])
@@ -276,7 +285,6 @@ class NewWindow(Toplevel):
         print(f"Headers Content Type: {response.headers['content-type']}")
         print(f'Yeison Final::{response.json()}')
 
-
 def DelayRouteOpenOrClose(btn):
     boolGarageInRouteOpen = True
     btn.bind("<Button>",
@@ -287,10 +295,8 @@ def DelayRouteOpenOrClose(btn):
     boolGarageInRouteOpen = False
     btn.bind("<Button>",
              lambda e, boton=btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')],
-                    DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, IDDoor, IDAuxOut, DoorType,
+                    DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, hab_ENTRY, IDDoor, IDAuxOut, DoorType,
                                                                          my_headers))
-
-
 def validate_entry(text, new_text):
     try:
         if not (new_text):
@@ -403,10 +409,10 @@ my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
 BioSecurityStatus = False
 master = Tk()
 num_displays = ctypes.windll.user32.GetSystemMetrics(80)
-num_displays=0
+#num_displays=0
 widthMaxWindow = ctypes.windll.user32.GetSystemMetrics(16)
 heightMaxWindow = ctypes.windll.user32.GetSystemMetrics(17)
-screen_width = int(widthMaxWindow/num_displays)  if num_displays>0 else 1024
+screen_width = int(widthMaxWindow/num_displays)  if num_displays>0 else 1020
 screen_height = int(heightMaxWindow/num_displays) if num_displays>0 else 768
 btnRelativeRowPos=0
 btnRelativeColPos=0
@@ -478,39 +484,42 @@ labelQueryResult.grid(row=3, column=0, pady=2, sticky=W)
 
 radek_line = 2  # Construye Matriz de Botones Set  ROW  of  matríz of Buttons
 bunka_column = 0
-last_btn_pos_y1=0  #Establece un valor semilla para determinar la posición de la última fila de los btn
-
+last_btn_pos_y1=0  #Establece un valor semilla para determinar la posición de la última fila de los btn_dict
+btn_dict={}
 for element in Dict_Door_ID.keys():
     state = DISABLED
 
     if len(Dict_Door_ID[element]) == 32:
         state = NORMAL
         if (Dict_Door_Type[element]=='SEDAN'):
-            btn = Button(frame_buttons, text=element, padding=10, state=state, style="TButton")
+            btn_dict[element] = Button(frame_buttons, text=element, padding=10, state=state, style="TButton")
 
         elif (Dict_Door_Type[element]=='MOTO' or Dict_Door_Type[element]=='HIBRIDO'):
-            btn = Button(frame_buttons, text=element, padding=10, state=state, style="moto.TButton")
+            btn_dict[element] = Button(frame_buttons, text=element, padding=10, state=state, style="moto.TButton")
 
-        btn.bind("<Button>",
-                 lambda e, boton=btn, IDDoor=Dict_Door_ID[btn.cget('text')], IDAuxOut=Dict_AuxOut_ID[btn.cget('text')],
-                        DoorType=Dict_Door_Type[btn.cget('text')]: NewWindow(master, boton, hab_ENTRY, IDDoor, IDAuxOut,
-                                                                             DoorType,
-                                                                             my_headers))
+        btn_dict[element].bind("<Button>",
+                      lambda e, boton=btn_dict[element], IDDoor=Dict_Door_ID[btn_dict[element].cget('text')], IDAuxOut=Dict_AuxOut_ID[btn_dict[element].cget('text')],
+                             DoorType=Dict_Door_Type[btn_dict[element].cget('text')]: NewWindow(master, boton, hab_ENTRY, IDDoor, IDAuxOut,
+                                                                                       DoorType,
+                                                                                       my_headers))
     else:
-        btn = Button(frame_buttons, text='...', padding=10, state=state)
+        btn_dict[element] = Button(frame_buttons, text='...', padding=10, state=state)
 
+    last_btn_pos_y1 = btn_dict[element].winfo_y() if btn_dict[element].winfo_rooty() >= last_btn_pos_y1 else last_btn_pos_y1
 
-    last_btn_pos_y1 = btn.winfo_y() if btn.winfo_rooty() >= last_btn_pos_y1 else last_btn_pos_y1
-    frame_buttons.rowconfigure(radek_line, minsize=(screen_height/2/8))
-    frame_buttons.columnconfigure(bunka_column, minsize=(screen_width-110)/10)
-    btn.grid(row=radek_line, column=bunka_column, padx=2, pady=2, sticky=NSEW)
-    master.update()
-    #master.geometry(f'{screen_width+100}x{screen_height}')
+    frame_buttons.rowconfigure(radek_line, minsize=(screen_height/2/8)) #Se divide por 8 porque son 8 filas de Habitaciones y Se divide por 2 para dejar espacio al log de notificaciones
+    frame_buttons.columnconfigure(bunka_column, minsize=(screen_width-100)/10) #Se Divide por 10 porque hay 10 columnas de habitaciones por cada fila
+    btn_dict[element].grid(row=radek_line, column=bunka_column, padx=2, pady=2, sticky=NSEW)
+    #master.update()
+
 
     bunka_column += 1
     if bunka_column == 10:  # changed this variable to make it easier to test code.
         bunka_column = 0
         radek_line += 1
+#Valores finales para la Ventana Principal del mainloop
+
+master.geometry(f'{screen_width+100}x{screen_height}')
 master.title('Apertura Puertas y Garajes Motel Classic')
 master.config(bg='#68839B')
 p1 = PhotoImage(file='RAM4GB.png')
