@@ -147,7 +147,7 @@ class NewWindow(Toplevel):
     def API_door(self):
         endpoint_Door = 'http://' + Dict_Ini_Params[
             'IPV4AddressServer'] + '/api/door/remoteOpenById?' + 'doorId=' + self.IDDoor + \
-                        '&interval=1' + '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
+                        '&interval=1' + '&access_token=8FA796C17CDECC1F05EEDE28B0A0F1D574BF0B8A034CAD9F11DB4D4EB14C88A4'
         # print(frame_buttons'url_abrir_cerrar_puerta {endpoint_Door}')
         response = requests.post(endpoint_Door, headers=self.my_headers)
         print(f'Respuesta JSON API_DoorOpen: {response.json()}')
@@ -155,7 +155,7 @@ class NewWindow(Toplevel):
     def API_Close_door(self):
         endpoint_Door = 'http://' + Dict_Ini_Params[
             'IPV4AddressServer'] + '/api/door/remoteCloseById?doorId=' + self.IDDoor \
-                        + '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
+                        + '&access_token=8FA796C17CDECC1F05EEDE28B0A0F1D574BF0B8A034CAD9F11DB4D4EB14C88A4'
         # print(frame_buttons'url_abrir_cerrar_puerta {endpoint_Door}')
         response = requests.post(endpoint_Door, headers=self.my_headers)
         print(f'Respuesta JSON API_Close_Door: {response.json()}, {self.labelHabitacion}')
@@ -254,7 +254,7 @@ class NewWindow(Toplevel):
     def API_AuxButtonNormalOpen(self):
         endpoint_Aux = 'http://' + Dict_Ini_Params[
             'IPV4AddressServer'] + '/api/auxOut/remoteNormalOpenByAuxOutById?id=' + self.IDAuxOut + \
-                       '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
+                       '&access_token=8FA796C17CDECC1F05EEDE28B0A0F1D574BF0B8A034CAD9F11DB4D4EB14C88A4'
         response = requests.post(endpoint_Aux, headers=self.my_headers)
         print(f'json response NormalOpenAuxOut:   {response.json()}')
         return response.json()['message']
@@ -263,7 +263,7 @@ class NewWindow(Toplevel):
     def API_AuxButtonClose(self):
         endpoint_Aux = 'http://' + Dict_Ini_Params[
             'IPV4AddressServer'] + '/api/auxOut/remoteCloseByAuxOutById?id=' + self.IDAuxOut + \
-                       '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
+                       '&access_token=8FA796C17CDECC1F05EEDE28B0A0F1D574BF0B8A034CAD9F11DB4D4EB14C88A4'
         response = requests.post(endpoint_Aux, headers=self.my_headers)
         print(f'json response CloseAuxOut:   {response.json()}:,  {self.labelHabitacion} ')
         return response.json()['message']
@@ -360,7 +360,7 @@ def submitQuery(labelQueryResult, BioSecurityStatus):
 def API_Door_Status(IDDoor):
     print(f'Api Status Ejecutado, {IDDoor}')
     endpoint_Door = 'http://' + Dict_Ini_Params['IPV4AddressServer'] + '/api/door/doorStateById?' + 'doorId=' + IDDoor + \
-                    '&access_token=17F6FBF25F23BFC07BD133624B1B76AF60D589B72C7F3F2E0C99CB940D3E6DD0'
+                    '&access_token=8FA796C17CDECC1F05EEDE28B0A0F1D574BF0B8A034CAD9F11DB4D4EB14C88A4'
     try:
         response = requests.get(endpoint_Door, headers=my_headers)
         print(f'json response:   {response.json()}')
@@ -368,7 +368,7 @@ def API_Door_Status(IDDoor):
         print(f'Estado Sensor Puerta= {DoorStatus}')
         return DoorStatus
     except:
-        return "Puerta  o Garaje Inexistente"
+        return "Puerta o Garaje Inexistente"
 
 # Specify path
 def VerificaTXT(filetxt):
@@ -405,7 +405,8 @@ Dict_Ini_Params = leer_csv('zkt.ini')
 
 global my_headers
 my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
-              'Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
+              'Authorization': 'Basic YWRtaW46c21hcnQyMDIyLkA='}
+              #'Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
 BioSecurityStatus = False
 master = Tk()
 num_displays = ctypes.windll.user32.GetSystemMetrics(80)
@@ -532,12 +533,15 @@ def checkPing():
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     output = Popen(["ping", "-n", "2", my_address], startupinfo=startupinfo, stdout=PIPE).communicate()[0]
-    if output.find(b'tiempo') > 0:
+    if output.find(b'time') > 0 or output.find(b'tiempo') > 0:
         BioSecurityStatus = True
-    elif output.find(b'tiempo') == -1:
+    elif output.find(b'time') == -1 and output.find(b'tiempo')  == -1:
         BioSecurityStatus = False
     print(f'BioSecurityStatus={BioSecurityStatus}')
-    return output.find(b'tiempo')  # If return -1, then Host inaccessible
+    if (BioSecurityStatus):
+        return 1 #output.find(b'time')   If return -1, then Host inaccessible
+    else:
+        return -1
 
 def WarningConectivity():
     while True:
