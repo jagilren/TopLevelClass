@@ -147,7 +147,7 @@ class NewWindow(Toplevel):
     def API_door(self):
         endpoint_Door = 'http://' + Dict_Ini_Params[
             'IPV4AddressServer'] + '/api/door/remoteOpenById?' + 'doorId=' + self.IDDoor + \
-                        '&interval=1' + '&access_token=8FA796C17CDECC1F05EEDE28B0A0F1D574BF0B8A034CAD9F11DB4D4EB14C88A4'
+                        '&interval=1' + APIToken
         # print(frame_buttons'url_abrir_cerrar_puerta {endpoint_Door}')
         response = requests.post(endpoint_Door, headers=self.my_headers)
         print(f'Respuesta JSON API_DoorOpen: {response.json()}')
@@ -155,7 +155,7 @@ class NewWindow(Toplevel):
     def API_Close_door(self):
         endpoint_Door = 'http://' + Dict_Ini_Params[
             'IPV4AddressServer'] + '/api/door/remoteCloseById?doorId=' + self.IDDoor \
-                        + '&access_token=8FA796C17CDECC1F05EEDE28B0A0F1D574BF0B8A034CAD9F11DB4D4EB14C88A4'
+                        + APIToken
         # print(frame_buttons'url_abrir_cerrar_puerta {endpoint_Door}')
         response = requests.post(endpoint_Door, headers=self.my_headers)
         print(f'Respuesta JSON API_Close_Door: {response.json()}, {self.labelHabitacion}')
@@ -254,7 +254,7 @@ class NewWindow(Toplevel):
     def API_AuxButtonNormalOpen(self):
         endpoint_Aux = 'http://' + Dict_Ini_Params[
             'IPV4AddressServer'] + '/api/auxOut/remoteNormalOpenByAuxOutById?id=' + self.IDAuxOut + \
-                       '&access_token=8FA796C17CDECC1F05EEDE28B0A0F1D574BF0B8A034CAD9F11DB4D4EB14C88A4'
+                       APIToken
         response = requests.post(endpoint_Aux, headers=self.my_headers)
         print(f'json response NormalOpenAuxOut:   {response.json()}')
         return response.json()['message']
@@ -263,7 +263,7 @@ class NewWindow(Toplevel):
     def API_AuxButtonClose(self):
         endpoint_Aux = 'http://' + Dict_Ini_Params[
             'IPV4AddressServer'] + '/api/auxOut/remoteCloseByAuxOutById?id=' + self.IDAuxOut + \
-                       '&access_token=8FA796C17CDECC1F05EEDE28B0A0F1D574BF0B8A034CAD9F11DB4D4EB14C88A4'
+                       APIToken
         response = requests.post(endpoint_Aux, headers=self.my_headers)
         print(f'json response CloseAuxOut:   {response.json()}:,  {self.labelHabitacion} ')
         return response.json()['message']
@@ -360,7 +360,7 @@ def submitQuery(labelQueryResult, BioSecurityStatus):
 def API_Door_Status(IDDoor):
     print(f'Api Status Ejecutado, {IDDoor}')
     endpoint_Door = 'http://' + Dict_Ini_Params['IPV4AddressServer'] + '/api/door/doorStateById?' + 'doorId=' + IDDoor + \
-                    '&access_token=8FA796C17CDECC1F05EEDE28B0A0F1D574BF0B8A034CAD9F11DB4D4EB14C88A4'
+                    APIToken
     try:
         response = requests.get(endpoint_Door, headers=my_headers)
         print(f'json response:   {response.json()}')
@@ -403,10 +403,13 @@ Dict_AuxOut_ID = leer_csv('AuxOut.txt')
 Dict_Door_Type = leer_csv('doors_type.txt')
 Dict_Ini_Params = leer_csv('zkt.ini')
 
-global my_headers
+global my_headers, APIToken
+BasicAuth=Dict_Ini_Params['BasicAuth']
+APIToken=Dict_Ini_Params['APIToken']
 my_headers = {'Accept': 'application/json', 'Content-Type': 'application/json',
-              'Authorization': 'Basic YWRtaW46c21hcnQyMDIyLkA='}
-              #'Authorization': 'Basic amFnaWxyZW46VGVtcG9yYWwwMS5hYg=='}
+              'Authorization': BasicAuth}
+
+
 BioSecurityStatus = False
 master = Tk()
 num_displays = ctypes.windll.user32.GetSystemMetrics(80)
