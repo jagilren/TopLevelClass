@@ -34,24 +34,32 @@ class WindowOpenendDoors(Toplevel):
     def __init__(self, master= None, myheaders= None, Dict_Door_ID= None, **my_dict):
         super().__init__(master=master)
         self.title('GARAJES REPORTADOS COMO ABIERTOS')
-        self.geometry("800x600")
+        self.geometry("900x600")
         self.lift()
         self.grab_set()
         self.OpenDoorsListBox = Listbox(self, width=int(self.winfo_reqwidth()/2), height=int(self.winfo_reqheight()/2))  # reqwidth method return value in pixels
-        self.OpenDoorsListBox.configure(background="skyblue4", foreground="white", font=('Aerial 13'))
+        underline_font = font.Font(family='Aerial 13',underline=True, size=12, weight='bold',slant='italic')
+        custom_font = font.Font(family='Tahoma', underline=False, size=14, weight='bold')
         self.OpenDoorsListBox.grid(column=0, row=1, rowspan=2, columnspan=1, sticky=W)
+        self.OpenDoorsListBox.configure(background="white",font=(custom_font))
         self.putListBox()
         print(f'Ancho de TopLevel={self.winfo_reqwidth()}, Alto de TopLevel={self.winfo_reqheight()}')
         HayAbiertas= False
         self.OpenDoorsListBox.insert(0,'Las siguientes habitaciones se reportan como abiertas. Revise el sensor para corregir')
+        self.OpenDoorsListBox.itemconfigure(0,{'bg':"khaki3",'fg':"red"})
+
+        #self.OpenDoorsListBox.itemconfigure(0,background="white", font=underline_font)
         for element in my_dict.keys():
             print(f'El elemento actual es {element}')
             if Dict_Door_Type[element] == 'SEDAN':
 
                 if API_Door_Status(Dict_Door_ID[element]) == '2': #2 SIGNIFICA ABIERTA
                     HayAbiertas= True
-                    self.OpenDoorsListBox.insert(2,'')
+
+                    self.OpenDoorsListBox.insert(1,'')
+                    self.OpenDoorsListBox.itemconfigure(1,{'bg':'white', 'fg':'white'})
                     self.OpenDoorsListBox.insert(2, element)
+                    self.OpenDoorsListBox.itemconfigure(2, {'bg':'skyblue4', 'fg':'white'})
         if HayAbiertas==False:
             self.OpenDoorsListBox.insert(2, '')
             self.OpenDoorsListBox.insert(2, 'Ninguna puerta está abierta')
