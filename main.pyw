@@ -30,10 +30,39 @@ class DelayRouteOpenGaraje(Toplevel):
         self.threadDelayRouteOpen = Thread(target=self.DelayRouteOpen(), name='threadDelayRouteOpen')
         '''
 
-class WindowOPenendDoors(Toplevel):
-    def __init__(self):
-        print('Clase Creada')
+class WindowOpenendDoors(Toplevel):
+    def __init__(self, master= None, myheaders= None, Dict_Door_ID= None, **my_dict):
+        super().__init__(master=master)
+        self.title('GARAJES REPORTADOS COMO ABIERTOS')
+        self.geometry("800x600")
+        self.lift()
+        self.grab_set()
+        self.OpenDoorsListBox = Listbox(self, width=int(self.winfo_reqwidth()/2), height=int(self.winfo_reqheight()/2))  # reqwidth method return value in pixels
+        self.OpenDoorsListBox.configure(background="skyblue4", foreground="white", font=('Aerial 13'))
+        self.OpenDoorsListBox.grid(column=0, row=1, rowspan=2, columnspan=1, sticky=W)
+        self.putListBox()
+        print(f'Ancho de TopLevel={self.winfo_reqwidth()}, Alto de TopLevel={self.winfo_reqheight()}')
+        HayAbiertas= False
+        self.OpenDoorsListBox.insert(0,'Las siguientes habitaciones se reportan como abiertas. Revise el sensor para corregir')
+        for element in my_dict.keys():
+            print(f'El elemento actual es {element}')
+            if Dict_Door_Type[element] == 'SEDAN':
+
+                if API_Door_Status(Dict_Door_ID[element]) == '2': #2 SIGNIFICA ABIERTA
+                    HayAbiertas= True
+                    self.OpenDoorsListBox.insert(2,'')
+                    self.OpenDoorsListBox.insert(2, element)
+        if HayAbiertas==False:
+            self.OpenDoorsListBox.insert(2, '')
+            self.OpenDoorsListBox.insert(2, 'Ninguna puerta está abierta')
+
+
+
+
+    def putListBox(self):
         pass
+
+
 class NewWindow(Toplevel):
     def __init__(self, master=None, boton=None, hab_ENTRY=None, IDDoor=None, IDAuxOut=None, DoorType=None, my_headers=None):
         global boolGarageInRouteOpen
@@ -41,6 +70,7 @@ class NewWindow(Toplevel):
         self.title(boton.cget('text'))
         self.my_headers = my_headers
         self.geometry("400x200")
+        self.RedundantOperation = False
         self.boton = boton
         self.hab_ENTRY=hab_ENTRY
         self.labelHabitacion = boton.cget('text')
@@ -55,6 +85,7 @@ class NewWindow(Toplevel):
         self.threadUnBlock = Thread(target=self.ButtonOpen_ButtonClose, name='threadUnBlock')
         self.threadBlock = Thread(target=self.ButtonClose, name='threadBlock')
         self.threadDelayRouteOpen = Thread(target=DelayRouteOpenOrClose, args=(self.boton,), name='threadDelayRouteOpen')
+        self.threadBlinkColorListBox = Thread(target=self.blinking_ListBoxProcess,args=("orchid1","SeaGreen1","snow",20),name='threadBlinkColorListBox')
         print(f'Estado de Recorrido de la puerta {boton} = {not(boolGarageInRouteOpen)}')
         #Cambia el Texto de la EntryBox de Habitación para consulta de estado Rápido luego de salir de la Ventana
         self.hab_ENTRY.delete(0, END)
@@ -108,7 +139,15 @@ class NewWindow(Toplevel):
     def foreground_logListBox(self, colorista):
         ct = datetime.datetime.now()
         logListBox.itemconfigure(0, background="skyblue4", foreground=colorista)
-
+    def blinking_ListBoxProcess(self, blinkColor,colorista,backColor, blinkTime):
+        color=colorista
+        for segundos in range(0, blinkTime):
+            color = blinkColor if color == colorista else colorista
+            time.sleep(0.5)
+            logListBox.itemconfigure(0, background="skyblue4", foreground=color)
+    def blinking_ListBoxThread(self):
+        self.threadBlinkColorListBox.daemon=True
+        self.threadBlinkColorListBox.start()
     def AssignProcess(self):
         self.threadAssign.daemon = True
         self.threadAssign.start()
@@ -211,8 +250,10 @@ class NewWindow(Toplevel):
 
             else:
                 print("GARAJE Ya está Abierta.  No se ejecuta la acción")
-                self.Write_logListBox('--- GARAJE YA ESTÁ ABIERTO ---')
+                self.RedundantOperation = True
+                self.Write_logListBox('--- GARAJE YA ESTÁ ABIERTO --- MIRE LAS CÁMARAS O USE EL BOTON "CERRAR"---')
                 self.foreground_logListBox("orchid1")
+                self.blinking_ListBoxThread()
         else:  # Si es Moto o Peaton
             self.API_door()  # Abre de una si es moto o peaton sin importar estado de la puerta
             print(f'Wait...02 seconds for AuxNormalOpen Execution')
@@ -221,13 +262,15 @@ class NewWindow(Toplevel):
         time.sleep(2)
         print(f'Wait...02 seconds for AuxNormalOpen Execution')
         self.API_AuxButtonNormalOpen()
-        self.Write_logListBox(f'--- {self.boton.cget("text")} DESBLOQUEADA ---')
-        self.foreground_logListBox("goldenrod1")
+        if not(self.RedundantOperation):
+            self.Write_logListBox(f'--- {self.boton.cget("text")} DESBLOQUEADA ---')
+            self.foreground_logListBox("goldenrod1")
         time.sleep(2)
         if Dict_Door_Type[self.boton.cget('text')] == 'SEDAN':
-            if API_Door_Status(self.IDDoor) == '2':
-                self.Write_logListBox(f'--- GARAJE {self.boton.cget("text")}  ESTÁ ABIERTO  ---')
-                self.foreground_logListBox("goldenrod1")
+            if API_Door_Status(self.IDDoor) == '2': #2 Siginifica Garaje o Puerta Abierta
+                if not(self.RedundantOperation):
+                    self.Write_logListBox(f'--- GARAJE {self.boton.cget("text")}  ESTÁ ABIERTO  ---')
+                    self.foreground_logListBox("goldenrod1")
             else:  # Si no cambió el estado del Sensor
                 self.Write_logListBox('--- GARAJE PERMANECIO CERRADA ---')
                 self.foreground_logListBox("pink")
@@ -236,9 +279,10 @@ class NewWindow(Toplevel):
             self.foreground_logListBox("goldenrod1")
 
         labelQueryResult.config(text="Esperando...", background='black')
+        #Ciclo For para demorar el tiempo de Desactivación del Botón de Bloqueo
         for element in range(int(Dict_Ini_Params['TimeOutButtonNormalOpen'])):
             time.sleep(1)
-            #print(frame_buttons'Threading Time = {element} AuxClose Next to Execute threadAssignProcess')
+            print(f'Resting Time for  Threading AuxButtoonClose  = {int(Dict_Ini_Params["TimeOutButtonNormalOpen"])-element}  "AuxButtonClose Next to Execute threadAssignProcess" \n')
         self.API_AuxButtonClose()
         self.Write_logListBox('--- BLOQUEADA ---')
         self.foreground_logListBox("SeaGreen1")
@@ -469,13 +513,15 @@ btnQuery.bind('<Return>',
               lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var.get(): submitQuery(labelQueryResult, BioSecurityStatus))
 btnQOpenedDoors =Button(f_openedDoors, text="PUERTAS ABIERTAS", padding=1, command=NONE, width=18,style="small.TButton")
 btnQOpenedDoors.grid(row=2, column=6, pady=2)
-btnQOpenedDoors.bind("<Button>",lambda e, IDDoor=hab_var.get(), IDAuxOut=hab_var.get(): submitQuery(labelQueryResult, BioSecurityStatus))
+my_dict={'a': 'A', 'b': 'B'}
+btnQOpenedDoors.bind("<Button>", lambda e: WindowOpenendDoors(master, my_headers, Dict_Door_ID, **btn_dict))
 myFont = font.Font(family='Helvetica')
 
 global logListBox
 logListBox = Listbox(f_foot, width=120, height=int(16))  #width is noumbre of characteres !pixels; height is lines not pixels
-logListBox.grid(column=0,row=5,rowspan=2, columnspan=20,sticky=W)
 logListBox.configure(background="skyblue4", foreground="white", font=('Aerial 13'))
+logListBox.grid(column=0,row=5,rowspan=2, columnspan=20,sticky=W)
+
 
 
 #btnQOpenedDoors['font']=myFont
@@ -586,7 +632,7 @@ if  (checkPing() == -1):
     master.destroy()
     exit()
 
-WindowOpenDoor=WindowOPenendDoors()
+#WindowOpenDoor=WindowOPenendDoors()
 
 threadCheckConectivity = MTThread(name='Conectivity', target=WarningConectivity)
 threadCheckConectivity.daemon = True
